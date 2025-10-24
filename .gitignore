@@ -1,0 +1,11 @@
+# Maven / Java / IntelliJ
+target/
+.idea/
+*.iml
+*.iws
+*.ipr
+# OS
+.DS_Store
+Thumbs.db
+# Logs
+hs_err_pid*
