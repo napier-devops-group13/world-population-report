@@ -1,0 +1,8 @@
+# Default owners for everything
+* @napier-devops-group13
+
+# CI/CD changes → lead reviewer
+.github/workflows/*  @Yamikirito
+
+# Style config → lead reviewer
+config/checkstyle/*  @Yamikirito
