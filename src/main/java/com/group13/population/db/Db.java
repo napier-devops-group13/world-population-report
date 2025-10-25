@@ -1,4 +1,4 @@
-﻿package com.group13.population.db;
+package com.group13.population.db;
 
 import java.sql.Connection;
 import java.sql.DriverManager;

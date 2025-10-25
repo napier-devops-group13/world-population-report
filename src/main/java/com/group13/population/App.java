@@ -1,4 +1,4 @@
-﻿package com.group13.population;
+package com.group13.population;
 
 import com.group13.population.repo.WorldRepo;
 import io.javalin.Javalin;

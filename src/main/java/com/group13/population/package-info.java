@@ -1,4 +1,4 @@
-﻿ /**
-  * Root package for the World Population Report service.
-  */
- package com.group13.population;
+@NonnullByDefault
+package com/group13/population;
+/**  */
+import org.eclipse.jdt.annotation.NonNullByDefault as NonnullByDefault;

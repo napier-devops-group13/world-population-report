@@ -41,7 +41,7 @@
       <version>${slf4j.version}</version>
     </dependency>
 
-    <!-- JSON mapper (silences Javalin’s mapper warning) -->
+    <!-- JSON mapper (silences Javalinâ€™s mapper warning) -->
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
