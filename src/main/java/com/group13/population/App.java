@@ -1,60 +1,53 @@
 package com.group13.population;
 
 import io.javalin.Javalin;
+import io.javalin.http.HttpStatus;
 
 /**
- * Entry point for the World Population Reporting API.
- * <p>
- * Minimal scaffold used for CR1: starts a Javalin server,
- * provides a health endpoint, and is packaged as a shaded JAR.
- * </p>
+ * Entry point for the World Population Report API.
  */
 public final class App {
 
-    /** Default port when PORT env var is not set. */
-    private static final int DEFAULT_PORT = 7000;
-
     private App() {
-        // Utility class: prevent instantiation
+        // utility class: no instances
     }
 
-    /**
-     * Application bootstrap.
-     *
-     * @param args ignored
-     */
     public static void main(final String[] args) {
-        final int port = getPortFromEnvOrDefault();
-        Javalin app = Javalin.create(config -> config.showJavalinBanner = false)
-                .get("/", ctx -> ctx.result("World Population Report API (SET09803)"))
-                .get("/health", ctx -> ctx.json(new Health("ok")))
-                .start(port);
+        final int port = envInt("PORT", 7000);
 
-        // Simple lifecycle log to help examiners see it running
-        System.out.printf("Server started on http://localhost:%d%n", port);
+        // Javalin 5 – simplest form (no special config needed)
+        final Javalin app = Javalin.create();
 
-        // Add shutdown hook to stop server gracefully
-        Runtime.getRuntime().addShutdownHook(new Thread(app::stop));
+        // Basic info (helpful sanity check)
+        app.get("/", ctx -> ctx.status(HttpStatus.OK).result("World Population Report API"));
+
+        // Health/ready endpoints (must return HTTP 200 for your PowerShell checks)
+        app.get("/ready",  ctx -> ctx.contentType("text/plain").status(200).result("READY"));
+        app.get("/health", ctx -> ctx.contentType("text/plain").status(200).result("OK"));
+
+
+        // Example business endpoint (wire up when your repo/service is ready)
+        // app.get("/population/world", ctx -> {
+        //   long pop = new WorldRepo().worldPopulation();
+        //   ctx.json(java.util.Map.of("population", pop));
+        // });
+
+        // Graceful shutdown on JVM exit
+        Runtime.getRuntime().addShutdownHook(new Thread(app::stop, "javalin-shutdown"));
+
+        app.start(port);
     }
 
-    private static int getPortFromEnvOrDefault() {
-        String raw = System.getenv("PORT");
-        if (raw == null || raw.isBlank()) {
-            return DEFAULT_PORT;
-        }
+    /** Reads an integer from the environment with a safe default. */
+    private static int envInt(final String key, final int defaultValue) {
         try {
-            return Integer.parseInt(raw);
-        } catch (NumberFormatException ex) {
-            // Fallback keeps the app resilient and easy to mark
-            return DEFAULT_PORT;
+            final String raw = System.getenv(key);
+            if (raw == null || raw.isBlank()) {
+                return defaultValue;
+            }
+            return Integer.parseInt(raw.trim());
+        } catch (final Exception ex) {
+            return defaultValue;
         }
     }
-
-    /**
-     * Tiny DTO for /health response.
-     * Using a Java record keeps the code concise and immutable.
-     *
-     * @param status service status string
-     */
-    public record Health(String status) { }
 }

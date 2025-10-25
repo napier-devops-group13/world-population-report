@@ -4,26 +4,17 @@
   "https://checkstyle.org/dtds/configuration_1_3.dtd">
 
 <module name="Checker">
-  <!-- Encoding & basic file rules -->
   <property name="charset" value="UTF-8"/>
-
-  <!-- Tabs not allowed -->
   <module name="FileTabCharacter">
     <property name="eachLine" value="true"/>
   </module>
-
-  <!-- Use 120 to match coursework expectations -->
   <module name="LineLength">
     <property name="max" value="120"/>
-    <!-- Ignore package/import lines -->
     <property name="ignorePattern" value="^package.*|^import.*"/>
   </module>
-
-  <!-- End files with a newline (easy to satisfy) -->
   <module name="NewlineAtEndOfFile"/>
 
   <module name="TreeWalker">
-    <!-- Naming & structure -->
     <module name="OuterTypeFilename"/>
     <module name="OneTopLevelClass"/>
     <module name="TypeName"/>
@@ -35,7 +26,6 @@
     <module name="MethodTypeParameterName"/>
     <module name="MethodName"/>
 
-    <!-- Braces & whitespace -->
     <module name="NeedBraces"/>
     <module name="LeftCurly">
       <property name="option" value="eol"/>
@@ -48,7 +38,6 @@
     <module name="NoLineWrap"/>
     <module name="EmptyBlock"/>
 
-    <!-- Misc quality checks -->
     <module name="NoFinalizer"/>
     <module name="UnnecessaryParentheses"/>
     <module name="SimplifyBooleanExpression"/>
@@ -62,13 +51,10 @@
       <property name="allowNonPrintableEscapes" value="true"/>
     </module>
 
-    <!-- Javadoc checks (relaxed via suppressions.xml) -->
     <module name="JavadocStyle"/>
     <module name="JavadocType"/>
     <module name="JavadocMethod"/>
     <module name="JavadocVariable"/>
-
-    <!-- Keep this to avoid 'final' spam on interfaces; can be suppressed -->
     <module name="RedundantModifier"/>
   </module>
 </module>

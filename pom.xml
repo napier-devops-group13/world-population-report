@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -8,42 +9,57 @@
   <version>0.1.0</version>
   <name>world-population-report</name>
   <description>SET09803 World Population Reporting API (Javalin + Maven + Docker)</description>
+  <packaging>jar</packaging>
 
   <properties>
-    <!-- Compile target set to 21 so both JDK 24 (local) and JDK 21 (coverage job) succeed -->
+    <!-- Compile to Java 21 bytecode -->
     <maven.compiler.release>21</maven.compiler.release>
     <min.java.version>21</min.java.version>
 
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
+    <!-- Libraries -->
     <junit.version>5.10.2</junit.version>
     <javalin.version>5.6.3</javalin.version>
     <slf4j.version>2.0.13</slf4j.version>
+    <mysql.version>8.4.0</mysql.version>
+
+    <!-- Tools -->
+    <checkstyle.plugin.version>3.3.1</checkstyle.plugin.version>
+    <checkstyle.engine.version>10.17.0</checkstyle.engine.version>
+    <spotbugs.plugin.version>4.8.6.5</spotbugs.plugin.version>
+    <jacoco.version>0.8.13</jacoco.version> <!-- supports Java 24 -->
+
+    <!-- Allow skipping coverage from CLI: -Djacoco.skip=true -->
+    <jacoco.skip>false</jacoco.skip>
   </properties>
 
   <dependencies>
-    <!-- Web framework -->
     <dependency>
       <groupId>io.javalin</groupId>
       <artifactId>javalin</artifactId>
       <version>${javalin.version}</version>
     </dependency>
 
-    <!-- Logging -->
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-simple</artifactId>
       <version>${slf4j.version}</version>
     </dependency>
 
-    <!-- JSON mapper to remove Javalin warning -->
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
       <version>2.17.2</version>
     </dependency>
 
-    <!-- Test stack -->
+    <dependency>
+      <groupId>com.mysql</groupId>
+      <artifactId>mysql-connector-j</artifactId>
+      <version>${mysql.version}</version>
+    </dependency>
+
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter</artifactId>
@@ -53,11 +69,10 @@
   </dependencies>
 
   <build>
-    <!-- shaded runnable JAR name: target/world-population-report.jar -->
     <finalName>${project.artifactId}</finalName>
 
     <plugins>
-      <!-- Enforce Maven/Java versions (allow 21+ so the JDK 21 coverage job passes) -->
+      <!-- Enforce toolchain versions -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-enforcer-plugin</artifactId>
@@ -79,7 +94,7 @@
         </executions>
       </plugin>
 
-      <!-- Compile using release set above (21) -->
+      <!-- Compile -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
@@ -89,7 +104,7 @@
         </configuration>
       </plugin>
 
-      <!-- Unit tests -->
+      <!-- Tests -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
@@ -99,56 +114,70 @@
         </configuration>
       </plugin>
 
-      <!-- Coverage (JaCoCo). We honor -Djacoco.skip=true in CI on JDK 24 -->
+      <!-- Coverage (JaCoCo) -->
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
-        <version>0.8.12</version>
+        <version>${jacoco.version}</version>
         <configuration>
           <skip>${jacoco.skip}</skip>
         </configuration>
         <executions>
           <execution>
-            <goals>
-              <goal>prepare-agent</goal>
-            </goals>
+            <id>jacoco-prepare-agent</id>
+            <goals><goal>prepare-agent</goal></goals>
+            <configuration>
+              <!-- Don’t touch JDK classes on Java 24 -->
+              <includes>
+                <include>com/group13/**</include>
+              </includes>
+              <excludes>
+                <exclude>**/*Test*</exclude>
+              </excludes>
+            </configuration>
           </execution>
           <execution>
             <id>report</id>
             <phase>verify</phase>
-            <goals>
-              <goal>report</goal>
-            </goals>
+            <goals><goal>report</goal></goals>
           </execution>
         </executions>
       </plugin>
 
-      <!-- Code style / comments (Google checks). Fails build on violations. -->
+      <!-- Checkstyle -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-checkstyle-plugin</artifactId>
-        <version>3.3.1</version>
+        <version>${checkstyle.plugin.version}</version>
+        <dependencies>
+          <dependency>
+            <groupId>com.puppycrawl.tools</groupId>
+            <artifactId>checkstyle</artifactId>
+            <version>${checkstyle.engine.version}</version>
+          </dependency>
+        </dependencies>
+        <configuration>
+          <!-- Use paths relative to project root -->
+          <configLocation>config/checkstyle/google_checks.xml</configLocation>
+          <suppressionsLocation>config/checkstyle/suppressions.xml</suppressionsLocation>
+          <consoleOutput>true</consoleOutput>
+          <failOnViolation>true</failOnViolation>
+          <linkXRef>false</linkXRef>
+        </configuration>
         <executions>
           <execution>
             <id>checkstyle-validate</id>
             <phase>validate</phase>
             <goals><goal>check</goal></goals>
-            <configuration>
-              <configLocation>config/checkstyle/google_checks.xml</configLocation>
-              <consoleOutput>true</consoleOutput>
-              <failOnViolation>true</failOnViolation>
-              <!-- avoid cross-reference warnings on CI sites -->
-              <linkXRef>false</linkXRef>
-            </configuration>
           </execution>
         </executions>
       </plugin>
 
-      <!-- Static analysis -->
+      <!-- SpotBugs -->
       <plugin>
         <groupId>com.github.spotbugs</groupId>
         <artifactId>spotbugs-maven-plugin</artifactId>
-        <version>4.8.6.5</version>
+        <version>${spotbugs.plugin.version}</version>
         <executions>
           <execution>
             <phase>verify</phase>
@@ -162,7 +191,7 @@
         </executions>
       </plugin>
 
-      <!-- Runnable shaded JAR -->
+      <!-- Shade runnable JAR -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
