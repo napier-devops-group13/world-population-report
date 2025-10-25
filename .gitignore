@@ -9,3 +9,5 @@ target/
 Thumbs.db
 # Logs
 hs_err_pid*
+
+.env
