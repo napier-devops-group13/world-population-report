@@ -1,60 +1,88 @@
 package com.group13.population;
 
+import com.group13.population.repo.WorldRepo;
 import io.javalin.Javalin;
+import io.javalin.http.HttpStatus;
+
+import java.sql.SQLException;
+import java.util.Map;
 
 /**
- * Entry point for the World Population Reporting API.
- * <p>
- * Minimal scaffold used for CR1: starts a Javalin server,
- * provides a health endpoint, and is packaged as a shaded JAR.
- * </p>
+ * Application entry point for the World Population Report service.
+ * Exposes basic health endpoints and the first requirement (R26).
  */
 public final class App {
 
-    /** Default port when PORT env var is not set. */
-    private static final int DEFAULT_PORT = 7000;
-
     private App() {
-        // Utility class: prevent instantiation
+        // Utility class – no instances.
     }
 
     /**
-     * Application bootstrap.
+     * Reads an integer from the environment with a safe default.
      *
-     * @param args ignored
+     * @param key          the environment variable name (e.g., "PORT")
+     * @param defaultValue the value to return if the env var is missing or invalid
+     * @return the parsed integer value
+     */
+    private static int envInt(final String key, final int defaultValue) {
+        try {
+            final String raw = System.getenv(key);
+            if (raw == null || raw.isBlank()) {
+                return defaultValue;
+            }
+            return Integer.parseInt(raw.trim());
+        } catch (final Exception ex) {
+            return defaultValue;
+        }
+    }
+
+    /**
+     * Starts the HTTP server.
+     *
+     * @param args standard command-line arguments (unused)
      */
     public static void main(final String[] args) {
-        final int port = getPortFromEnvOrDefault();
-        Javalin app = Javalin.create(config -> config.showJavalinBanner = false)
-                .get("/", ctx -> ctx.result("World Population Report API (SET09803)"))
-                .get("/health", ctx -> ctx.json(new Health("ok")))
-                .start(port);
+        final int port = envInt("PORT", 7000);
 
-        // Simple lifecycle log to help examiners see it running
-        System.out.printf("Server started on http://localhost:%d%n", port);
+        final Javalin app = Javalin.create(config -> {
+                // Request log: HttpStatus is not an int; print with %s to avoid format errors.
+                config.requestLogger.http((ctx, ms) ->
+                    System.out.printf("%s %s -> %s (%d ms)%n",
+                        ctx.method(), ctx.path(), ctx.status(), ms));
+            })
+            // Global safety net so unexpected exceptions become JSON 500s (useful in CI/demo)
+            .exception(Exception.class, (e, ctx) -> {
+                e.printStackTrace();
+                ctx.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .json(Map.of("error", "internal_error", "message", e.getMessage()));
+            })
+            .start(port);
 
-        // Add shutdown hook to stop server gracefully
-        Runtime.getRuntime().addShutdownHook(new Thread(app::stop));
+        // -------- Health probes --------
+        app.get("/", ctx -> ctx.result("World Population Report API — try /health or /population/world"));
+
+        // Liveness: server is up
+        app.get("/health", ctx -> ctx.result("OK"));
+
+        // Readiness: touch DB; 503 if DB not reachable yet
+        app.get("/ready", ctx -> {
+            try {
+                new WorldRepo().worldPopulation(); // simple DB touch
+                ctx.result("READY");
+            } catch (final SQLException ex) {
+                ctx.status(HttpStatus.SERVICE_UNAVAILABLE).result("DB_NOT_READY");
+            }
+        });
+
+        // -------- R26: Population of the world --------
+        app.get("/population/world", ctx -> {
+            try {
+                final long total = new WorldRepo().worldPopulation();
+                ctx.json(Map.of("scope", "world", "population", total));
+            } catch (final SQLException ex) {
+                ctx.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .json(Map.of("error", "db_error", "message", ex.getMessage()));
+            }
+        });
     }
-
-    private static int getPortFromEnvOrDefault() {
-        String raw = System.getenv("PORT");
-        if (raw == null || raw.isBlank()) {
-            return DEFAULT_PORT;
-        }
-        try {
-            return Integer.parseInt(raw);
-        } catch (NumberFormatException ex) {
-            // Fallback keeps the app resilient and easy to mark
-            return DEFAULT_PORT;
-        }
-    }
-
-    /**
-     * Tiny DTO for /health response.
-     * Using a Java record keeps the code concise and immutable.
-     *
-     * @param status service status string
-     */
-    public record Health(String status) { }
 }
