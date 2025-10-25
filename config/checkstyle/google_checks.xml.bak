@@ -1,48 +1,60 @@
-<?xml version="1.0"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE module PUBLIC
   "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
   "https://checkstyle.org/dtds/configuration_1_3.dtd">
+
 <module name="Checker">
-  <!-- Package docs required by labs -->
-  <module name="JavadocPackage"/>
-  <!-- Tabs and long lines -->
-  <module name="FileTabCharacter"/>
+  <property name="charset" value="UTF-8"/>
+  <module name="FileTabCharacter">
+    <property name="eachLine" value="true"/>
+  </module>
   <module name="LineLength">
     <property name="max" value="120"/>
-    <property name="ignorePattern" value="^package|^import|https?://"/>
+    <property name="ignorePattern" value="^package.*|^import.*"/>
   </module>
+  <module name="NewlineAtEndOfFile"/>
 
   <module name="TreeWalker">
-    <module name="AvoidStarImport"/>
-    <module name="UnusedImports"/>
-    <module name="WhitespaceAfter"/>
-    <module name="WhitespaceAround"/>
-    <module name="NeedBraces"/>
-    <module name="LeftCurly"/>
-    <module name="RightCurly"/>
-    <module name="NoLineWrap"/>
-    <module name="MethodParamPad"/>
-    <module name="ParenPad"/>
-    <!-- Keep Javadoc modules but allow missing javadoc: coursework-friendly -->
-    <module name="JavadocType">
-      <property name="scope" value="public"/>
-      <property name="allowMissingJavadoc" value="true"/>
-    </module>
-    <module name="JavadocMethod">
-      <property name="scope" value="public"/>
-      <property name="allowMissingJavadoc" value="true"/>
-      <property name="allowedAnnotations" value="Override,Test"/>
-      <property name="ignoreMethodNamesRegex" value="main"/>
-    </module>
-    <module name="JavadocVariable">
-      <property name="scope" value="public"/>
-      <property name="allowMissingJavadoc" value="true"/>
-    </module>
-    <!-- simple naming checks -->
-    <module name="LocalVariableName"/>
-    <module name="MemberName"/>
-    <module name="MethodName"/>
-    <module name="ParameterName"/>
+    <module name="OuterTypeFilename"/>
+    <module name="OneTopLevelClass"/>
     <module name="TypeName"/>
+    <module name="MemberName"/>
+    <module name="ParameterName"/>
+    <module name="LocalVariableName"/>
+    <module name="PackageName"/>
+    <module name="ClassTypeParameterName"/>
+    <module name="MethodTypeParameterName"/>
+    <module name="MethodName"/>
+
+    <module name="NeedBraces"/>
+    <module name="LeftCurly">
+      <property name="option" value="eol"/>
+    </module>
+    <module name="RightCurly"/>
+    <module name="WhitespaceAround"/>
+    <module name="WhitespaceAfter"/>
+    <module name="ParenPad"/>
+    <module name="MethodParamPad"/>
+    <module name="NoLineWrap"/>
+    <module name="EmptyBlock"/>
+
+    <module name="NoFinalizer"/>
+    <module name="UnnecessaryParentheses"/>
+    <module name="SimplifyBooleanExpression"/>
+    <module name="IllegalTokenText">
+      <property name="tokens" value="STRING_LITERAL, CHAR_LITERAL"/>
+      <property name="format" value="\\u00(09|0A|0C|0D|85|2028|2029)"/>
+    </module>
+    <module name="AvoidEscapedUnicodeCharacters">
+      <property name="allowEscapesForControlCharacters" value="true"/>
+      <property name="allowByTailComment" value="true"/>
+      <property name="allowNonPrintableEscapes" value="true"/>
+    </module>
+
+    <module name="JavadocStyle"/>
+    <module name="JavadocType"/>
+    <module name="JavadocMethod"/>
+    <module name="JavadocVariable"/>
+    <module name="RedundantModifier"/>
   </module>
 </module>

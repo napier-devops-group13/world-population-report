@@ -1,0 +1,55 @@
+name: Auto-triage issues
+
+on:
+  issues:
+    types: [opened, reopened, edited]
+
+# Minimum permissions the job needs
+permissions:
+  contents: read
+  issues: write
+  projects: write # only needed if you enable the "Add to Project" step below
+
+# Avoid duplicate runs on the same issue
+concurrency:
+  group: triage-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    steps:
+      # Ensure the 'triage' label exists (idempotent)
+      - name: Ensure 'triage' label exists
+        uses: peter-evans/create-or-update-label@v4
+        with:
+          name: triage
+          color: fbca04
+          description: Needs review by maintainers
+
+      # Add a default triage label to every new/reopened issue
+      - name: Add 'triage' label
+        uses: actions-ecosystem/action-add-labels@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          labels: triage
+
+      # (Optional) Auto-assign maintainers for first-pass review.
+      # Replace "your-github-username" with one or more comma-separated usernames.
+      - name: Auto-assign reviewers (optional)
+        if: ${{ !contains(github.event.issue.labels.*.name, 'bug') && !contains(github.event.issue.labels.*.name, 'feature') }}
+        uses: actions-ecosystem/action-add-assignees@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          assignees: your-github-username
+
+      # (Optional) Add new issues to a GitHub Project (Projects “beta”).
+      # 1) Create a classic or beta Project first.
+      # 2) Replace the URL below with your project’s URL.
+      # 3) Flip the 'if' to true to enable.
+      - name: Add to project (optional)
+        if: ${{ false }}  # set to true after updating project-url
+        uses: actions/add-to-project@v1
+        with:
+          project-url: https://github.com/orgs/<org>/projects/<id>
+          github-token: ${{ secrets.GITHUB_TOKEN }}
