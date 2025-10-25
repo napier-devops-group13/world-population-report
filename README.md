@@ -9,6 +9,8 @@ Minimal, CI-friendly scaffold that delivers:
 - **Dockerfile (multi-stage)** for a small, reproducible image
 - `docker compose` stack with **MySQL 8.4** auto-seeded from `db/init/01-world.sql`
 - **/ready** and **/health** endpoints
+- cp .env.example .env   # Windows: Copy-Item .env.example .env
+
 
 > **Branches**  
 > Active work happens on `feature/compose-worlddb` → merged into the default branch by PR.
