@@ -3,14 +3,12 @@ name: Auto-triage issues
 
 on:
   issues:
-    types: [opened, reopened]   # run when a new/ reopened issue appears
+    types: [opened, reopened, edited]   # triggers only on issues, not on code pushes
+  workflow_dispatch: {}                 # lets you run it manually if you want
 
-# Minimal permissions for this workflow
-permissions:
+permissions:                            # least-privilege for GITHUB_TOKEN
   contents: read
-  issues: write
-  # Only needed if you UNCOMMENT the "Add to Project" step below:
-  # repository-projects: write
+  issues: write                         # needed to add labels
 
 concurrency:
   group: triage-${{ github.event.issue.number }}
@@ -20,15 +18,8 @@ jobs:
   triage:
     runs-on: ubuntu-latest
     steps:
-      # 1) Auto-label the issue
-      - uses: actions-ecosystem/action-add-labels@v1
+      - name: Auto-label the issue
+        uses: actions-ecosystem/action-add-labels@v1
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}   # built-in, no setup
           labels: triage
-
-      # 2) (Optional) Add the issue to a Classic Project
-      # - uses: actions/add-to-project@v1
-      #   with:
-      #     project-url: https://github.com/orgs/<ORG>/projects/<ID>
-      #     # Classic PAT with "repo" + "project" scopes
-      #     github-token: ${{ secrets.CLASSIC_PROJECTS_TOKEN }}
