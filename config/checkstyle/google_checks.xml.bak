@@ -7,7 +7,10 @@
   <module name="JavadocPackage"/>
   <!-- Tabs and long lines -->
   <module name="FileTabCharacter"/>
-  <module name="LineLength"><property name="max" value="120"/></module>
+  <module name="LineLength">
+    <property name="max" value="120"/>
+    <property name="ignorePattern" value="^package|^import|https?://"/>
+  </module>
 
   <module name="TreeWalker">
     <module name="AvoidStarImport"/>

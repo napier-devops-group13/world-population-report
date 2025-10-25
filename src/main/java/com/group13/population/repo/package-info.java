@@ -1,7 +1,4 @@
 /**
- * Repository layer: world reports & queries.
+ * Repository layer for world reports & queries.
  */
-@NonNullByDefault
 package com.group13.population.repo;
-
-import org.eclipse.jdt.annotation.NonNullByDefault;

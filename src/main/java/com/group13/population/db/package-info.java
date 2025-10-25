@@ -1,7 +1,4 @@
 /**
- * Database access helpers (MySQL).
+ * Database access helpers (MySQL world sample DB).
  */
-@NonNullByDefault
 package com.group13.population.db;
-
-import org.eclipse.jdt.annotation.NonNullByDefault;
