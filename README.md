@@ -1,28 +1,27 @@
 # World Population Report (SET09803 · Group 13)
 
-[![build: master](https://github.com/napier-devops-group13/world-population-report/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/napier-devops-group13/world-population-report/actions/workflows/ci.yml)
-[![build: develop](https://github.com/napier-devops-group13/world-population-report/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/napier-devops-group13/world-population-report/actions/workflows/ci.yml)
-[![coverage](https://codecov.io/gh/napier-devops-group13/world-population-report/branch/master/graph/badge.svg)](https://codecov.io/gh/napier-devops-group13/world-population-report)
-![release](https://img.shields.io/github/v/release/napier-devops-group13/world-population-report?include_prereleases&sort=semver)
-![license](https://img.shields.io/github/license/napier-devops-group13/world-population-report)
+Minimal, CI-friendly scaffold that delivers:
+- Java 21+ with [Javalin 5] REST API
+- Maven build → shaded runnable JAR
+- Unit tests + JaCoCo coverage
+- Checkstyle (Google) + SpotBugs gates
+- Dockerfile (multi-stage) for a small, reproducible image
+- `docker compose` stack with **MySQL 8.4** auto-seeded using the official *world* sample DB
+- Health/Readiness endpoints + first feature (R26): world population
 
-> **Tech stack:** Java 24 · [Javalin](https://javalin.io) · MySQL (sample **world** DB) · Maven · JaCoCo · Checkstyle (Google) · SpotBugs · Docker · Docker Compose · GitHub Actions (CI/CD)
-
----
-
-## What this project does
-
-Implements the **World Population Reporting System** required by the coursework. The service exposes REST endpoints to produce 32 population/country/city/capital/language reports and additional population summaries. It is fully automated with CI, unit/initial integration tests, quality gates, and a Dockerized runtime with a MySQL container auto-seeded from the official **world** dataset.
+> **Branches**  
+> Active work happens on `feature/compose-worlddb` → merged to `develop` by PR.
 
 ---
 
-## Quick start
+## 1) Prerequisites
 
-### Option A — Run locally (no Docker)
-```bash
-# 1) Build shaded runnable JAR
-mvn -q -DskipTests package
+- **JDK 21** or newer (project is compiled with `--release 21` so JDK 24 also works)
+- **Maven 3.9+**
+- **Docker** and **Docker Compose V2** (comes with modern Docker Desktop)
+- Optional: **IntelliJ IDEA** (community or ultimate)
 
-# 2) Run it (expects DB env vars if you target a live MySQL)
-java -jar target/world-population-report.jar
-# → http://localhost:7000/health
+---
+
+## 2) Project layout (key files)
+

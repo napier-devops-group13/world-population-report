@@ -1,4 +1,4 @@
-package com.group13.population;
+﻿package com.group13.population;
 
 import com.group13.population.repo.WorldRepo;
 import io.javalin.Javalin;
@@ -14,7 +14,7 @@ import java.util.Map;
 public final class App {
 
     private App() {
-        // Utility class – no instances.
+        // Utility class â€“ no instances.
     }
 
     /**
@@ -50,7 +50,7 @@ public final class App {
                     System.out.printf("%s %s -> %s (%d ms)%n",
                         ctx.method(), ctx.path(), ctx.status(), ms));
             })
-            // Global safety net so unexpected exceptions become JSON 500s (useful in CI/demo)
+            // Global safety net so unexpected exceptions become JSON 500s (final useful in CI/demo)
             .exception(Exception.class, (e, ctx) -> {
                 e.printStackTrace();
                 ctx.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -59,7 +59,7 @@ public final class App {
             .start(port);
 
         // -------- Health probes --------
-        app.get("/", ctx -> ctx.result("World Population Report API — try /health or /population/world"));
+        app.get("/", ctx -> ctx.result("World Population Report API â€” try /health or /population/world"));
 
         // Liveness: server is up
         app.get("/health", ctx -> ctx.result("OK"));
@@ -86,3 +86,4 @@ public final class App {
         });
     }
 }
+

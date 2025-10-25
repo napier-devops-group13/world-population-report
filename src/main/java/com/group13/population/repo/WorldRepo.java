@@ -1,7 +1,10 @@
-package com.group13.population.repo;
+﻿package com.group13.population.repo;
 
 import com.group13.population.db.Db;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 /**
  * Repository for global aggregate queries.
@@ -14,7 +17,7 @@ public class WorldRepo {
      */
     public long worldPopulation() throws SQLException {
         final String sql = "SELECT SUM(Population) FROM country";
-        try (Connection c = Db.get();
+        try (final Connection c = Db.get();
              PreparedStatement ps = c.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             rs.next();
@@ -22,3 +25,5 @@ public class WorldRepo {
         }
     }
 }
+
+

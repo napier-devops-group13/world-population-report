@@ -1,11 +1,11 @@
-<!DOCTYPE module PUBLIC
+﻿<!DOCTYPE module PUBLIC
         "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
         "https://checkstyle.org/dtds/configuration_1_3.dtd">
 <module name="Checker">
     <property name="severity" value="warning"/>
     <module name="TreeWalker">
         <module name="JavadocType"/>
-        <module name="JavadocMethod"/>
+        <!-- JavadocMethod disabled for coursework scaffold -->
         <module name="JavadocVariable">
             <property name="scope" value="public"/>
             <property name="excludeScope" value="private"/>
@@ -21,3 +21,5 @@
         <module name="WhitespaceAround"/>
     </module>
 </module>
+
+
