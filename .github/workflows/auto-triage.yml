@@ -1,0 +1,25 @@
+# .github/workflows/auto-triage.yml
+name: Auto-triage issues
+
+on:
+  issues:
+    types: [opened, reopened, edited]   # triggers only on issues, not on code pushes
+  workflow_dispatch: {}                 # lets you run it manually if you want
+
+permissions:                            # least-privilege for GITHUB_TOKEN
+  contents: read
+  issues: write                         # needed to add labels
+
+concurrency:
+  group: triage-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Auto-label the issue
+        uses: actions-ecosystem/action-add-labels@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}   # built-in, no setup
+          labels: triage

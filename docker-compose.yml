@@ -1,0 +1,41 @@
+services:
+  db:
+    image: mysql:8.4
+    container_name: world-db
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-world}
+      MYSQL_USER: ${MYSQL_USER:-app}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-app}
+    # use an unoccupied host port (43306) -> container 3306
+    ports:
+      - "43306:3306"
+    volumes:
+      - world_db:/var/lib/mysql
+      - ./db/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD","mysqladmin","ping","-p${MYSQL_ROOT_PASSWORD:-root}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  app:
+    build: .
+    container_name: world-app
+    environment:
+      DB_HOST: ${DB_HOST:-db}
+      DB_PORT: "${DB_PORT:-3306}"   # inside the Docker network we still hit 3306
+      DB_NAME: ${DB_NAME:-world}
+      DB_USER: ${DB_USER:-app}
+      DB_PASS: ${DB_PASS:-app}
+      PORT: "${PORT:-7000}"
+    ports:
+      - "7000:7000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  world_db: {}

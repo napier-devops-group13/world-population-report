@@ -1,14 +1,32 @@
 # World Population Report (SET09803 · Group 13)
 
-Minimal scaffold to satisfy CR1:
-- Maven build → shaded runnable JAR
-- Unit tests + JaCoCo coverage
-- Checkstyle + SpotBugs
-- Dockerfile
-- GitHub Actions CI (build, test, analyze, docker build)
+Minimal, CI-friendly scaffold that delivers:
 
-## Run locally
-```bash
-mvn -q -DskipTests package
-java -jar target/world-population-report.jar
-# http://localhost:7000/health
+- Java **21+** with **Javalin 5** REST API
+- Maven build ➜ **shaded runnable JAR**
+- **Unit tests** + **JaCoCo** coverage
+- **Checkstyle (Google)** + **SpotBugs** gates
+- **Dockerfile (multi-stage)** for a small, reproducible image
+- `docker compose` stack with **MySQL 8.4** auto-seeded from `db/init/01-world.sql`
+- **/ready** and **/health** endpoints
+- cp .env.example .env   # Windows: Copy-Item .env.example .env
+
+
+> **Branches**  
+> Active work happens on `feature/compose-worlddb` → merged into the default branch by PR.
+
+---
+
+## 1) Prerequisites
+
+- **JDK 21** or newer (project is compiled with `--release 21`, so JDK 24 also works)
+- **Maven 3.9+**
+- **Docker Desktop** with **Compose v2** (comes with modern Docker Desktop)
+- Optional: **IntelliJ IDEA** (Community or Ultimate)
+
+Quick check:
+
+```powershell
+mvn -v
+java -version
+docker --version
