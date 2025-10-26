@@ -1,5 +1,6 @@
+# .github/ISSUE_TEMPLATE/config.yml
 blank_issues_enabled: false
 contact_links:
   - name: Questions & help
-    url: https://github.com/<org>/<repo>/discussions
+    url: https://github.com/napier-devops-group13/world-population-report/discussions
     about: Use Discussions for Q&A

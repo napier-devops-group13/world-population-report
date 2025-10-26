@@ -1,0 +1,36 @@
+name: User story
+description: Capture a user story with INVEST + acceptance criteria
+title: "[Story]: <role> needs <capability> to <benefit>"
+labels: ["story"]
+body:
+  - type: input
+    id: role
+    attributes:
+      label: As a…
+      placeholder: e.g., API consumer / DevOps student
+    validations: { required: true }
+  - type: input
+    id: need
+    attributes:
+      label: I need…
+      placeholder: e.g., a /health endpoint returning 200
+    validations: { required: true }
+  - type: input
+    id: benefit
+    attributes:
+      label: So that…
+      placeholder: e.g., I can verify service liveness in CI/CD
+    validations: { required: true }
+  - type: textarea
+    id: details
+    attributes:
+      label: Details/notes
+      description: Scope, non-goals, links to docs or PRs
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria (Given/When/Then)
+      value: |
+        - [ ] Given … When … Then …
+        - [ ] Given … When … Then …
+    validations: { required: true }
