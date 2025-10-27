@@ -6,7 +6,7 @@
 
   <groupId>com.group13.population</groupId>
   <artifactId>world-population-report</artifactId>
-  <version>$ver</version>
+  <version>$mnext</version>
   <name>world-population-report</name>
   <description>SET09803 World Population Reporting API (Javalin + Maven + Docker)</description>
   <packaging>jar</packaging>
