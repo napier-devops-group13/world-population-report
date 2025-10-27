@@ -1,177 +1,203 @@
 # Code of Conduct
-**World Population Report (SET09803 – Group 13)**
-
-> This document defines how we work together as a professional, respectful, and academically honest team.  
-> It applies to all project spaces and tools (IntelliJ, Git/GitHub, Issues/PRs, Discussions, meetings, lab sessions, chat, email).
-
----
-
-## 1) Our values
-
-- **Respect & inclusion** – We welcome everyone and their ideas. No harassment, discrimination, or belittling.
-- **Integrity** – We follow university academic rules. We write our own code, cite sources, and disclose assistance.
-- **Quality** – We commit to readable code, automated checks, tests, and helpful reviews.
-- **Reliability** – We communicate early, meet deadlines, and unblock teammates.
-- **Learning mindset** – We give constructive feedback, document decisions, and help each other grow.
+**Project:** World Population Reporting System (SET09803 – Group 13)  
+**Applies To:** All project spaces and interactions (GitHub repo, Issues/PRs/Discussions, Zube boards, sprints, commits, release notes, meetings, chat, and assessment submissions).  
+**Timezone:** Asia/Yangon (MMT, UTC+06:30)
 
 ---
 
-## 2) Expected behaviour
-
-- Be courteous, patient, and professional in all communications.
-- Use clear, constructive language in reviews and comments; challenge ideas, not people.
-- Ask for help early; offer help when you can.
-- Honour meeting times and task deadlines; signal risk early in the chat/issue tracker.
-- Keep discussions in public project spaces (Issues/PRs) so the team and markers can follow decisions.
-- Maintain a safe environment: no offensive jokes or imagery; no intimidation or stalking; no doxxing.
-- Protect credentials & personal data; never commit secrets. Use `.env` **locally** and track only `.env.example`.
+## 1) Purpose
+We commit to a respectful, inclusive, and productive environment. This Code sets clear expectations for behavior, collaboration, academic integrity, and workflow so our team can deliver high-quality software and meet **CR1**, **CR2**, and **Final Delivery** requirements.
 
 ---
 
-## 3) Unacceptable behaviour
-
-- Harassment, discrimination, or personal attacks of any kind.
-- Disruptive or hostile behaviour, trolling, spamming, or derailing threads.
-- Plagiarism or breaching academic integrity (see §4).
-- Sharing assessment solutions from other students/years or using prohibited materials.
-- Committing secrets or private data; circumventing security checks.
-- Bypassing code review / CI to merge knowingly broken code close to deadlines.
+## 2) Scope
+This Code applies to:
+- **All participants**: contributors, maintainers, collaborators, and reviewers.
+- **All spaces**: GitHub, Zube, meetings, chats, and classroom presentations.
+- **All phases**: setup, CR1, CR2, and Final Delivery (including late changes, hotfixes, and release tagging).
 
 ---
 
-## 4) Academic integrity & use of AI tools
+## 3) Our Standards
 
-We strictly follow university academic regulations.
+### Expected Behavior
+- Be respectful and professional; assume good intent.
+- Welcome questions; explain decisions with evidence (commits, CI logs, coverage, etc.).
+- Give and accept constructive feedback on code, tests, documentation, and diagrams.
+- Follow the agreed **GitFlow**, PR review practices, CI checks, and coding standards.
+- Credit sources and teammates; document decisions in Issues/PRs.
+- Keep discussions focused on the work, not the person.
 
-- **Your work must be your own.** You may discuss ideas, but code you submit must be authored by the team.
-- **Cite external sources** (blogs, docs, StackOverflow, examples) in the PR description and/or comments.
-- **AI assistants (e.g., ChatGPT, Copilot, Gemini)**
-  - May be used for brainstorming, clarifying concepts, refactoring suggestions, or boilerplate.
-  - **Must be disclosed** in the PR description (e.g., “Used AI to draft the README section; manually verified and edited”).
-  - **Must be verified** by you; never paste outputs blindly. You are responsible for correctness, licensing, and security.
-- If in doubt, **ask the module tutor** before submitting.
-
-Academic misconduct may lead to removal of contribution marks and university penalties.
-
----
-
-## 5) Collaboration workflow (Assessment GitFlow)
-
-This repo uses **GitFlow** as required in the coursework. We keep work isolated in feature branches,
-integrate on **develop**, and publish tagged releases from **master**.
-
-- **master** → production-ready code only. Each release is **tagged** (`vX.Y.Z`). Protected.
-- **develop** → integration branch; the default target for PRs. CI must be green.
-- **feature/*** → short-lived branches from `develop` for new work  
-  (e.g., `feature/compose-worlddb`).
-- **release/*** → stabilization branch created from `develop` to prepare a version  
-  Bug fixes and docs only; no new features.
-
-
-**Feature flow**
-1. Create your branch from develop
-   `git checkout -b feature/<topic> develop`
-2. Commit locally; push and open a PR **into `develop`**.
-3. Requirements to merge: CI green + at least one review approval.
-4. Squash/merge the PR into `develop`, then delete the feature branch "optional".
-
-**Release flow**
-1. Cut a release branch from `develop` and bump version/CHANGELOG:
-2. On the release branch accept only fixes and documentation. CI must stay green.
-3. Publish the release.
-4. Bring version bumps back to integration and clean up.
+### Unacceptable Behavior
+- Harassment, discrimination, personal attacks, or trolling.
+- Sharing others’ private information without consent.
+- Sexualized language or imagery; unwelcome advances.
+- Spamming Issues/PRs; derailing threads; “review gaming” (rubber-stamping).
+- Bypassing CI, test suites, or reviews; force-pushing to protected branches.
+- Plagiarism; submitting uncredited third-party or AI-generated work as original.
 
 ---
 
-## 6) Quality & security gates
+## 4) Coursework-Specific Rules (Napier SET09803)
 
-- **Code style & static analysis:** Checkstyle/SpotBugs must be clean; fix warnings you introduce.
-- **Tests:** Provide/maintain unit tests; do not reduce overall coverage without a reason.
-- **CI/CD:** GitHub Actions must pass. If the pipeline fails on your change, it’s your job to fix or revert quickly.
-- **Secrets:** `.env` is **local only** and **git-ignored**. Keep **`.env.example`** up-to-date with safe placeholders.
-- **Dependencies:** Avoid vulnerable or unlicensed libraries; document changes in PRs.
+### Academic Integrity
+- Do **not** submit someone else’s code, diagrams, or text as your own.
+- If external code/snippets are used, ensure license compatibility and **explicit attribution** in code comments and README.
+- Follow your module’s rules on the use of AI assistance; if used, **declare it** in the README (e.g., “Assistance used for documentation/templates/refactoring suggestions; code reviewed and tested by team.”).
 
----
+### Evidence for Assessment
+- Keep Issues, PRs, release notes, CI runs, coverage reports, and screenshots as evidence.
+- Ensure the **master** branch and README contain all required badges and the “evidence table” before each review and final submission.
 
-## 7) Communication & meetings
-
-- Primary channels: GitHub Issues/PRs (official record), plus our team chat for quick coordination.
-- Post **daily progress** or blockers on the board/issue.
-- Meeting etiquette: arrive on time, prepared, and with updates. Publish short minutes and decisions.
-- Time-zones or accessibility needs: tell the team so we can schedule fairly.
+### Deadlines & Timeboxes
+- Respect CR1/CR2 meeting times and internal sprint timeboxes.
+- Avoid last-minute large changes without peer review and a rollback plan.
 
 ---
 
-## 8) Decision making & conflict resolution
+## 5) Collaboration & Workflow Standards
 
-- Prefer consensus. If stuck, the **maintainer for the area** proposes a decision referencing requirements, test data, and risks.
-- If you disagree, propose an alternative with evidence. Keep it technical and respectful.
-- Persistent conflict → escalate to the **module tutor** after summarising prior attempts to resolve.
+### Git Strategy (GitFlow)
+- Long-lived branches: `master` (assessed), `develop`.
+- Short-lived: `feature/<scope>`, `release/<version>`, `hotfix/<version>`.
+- **Never** commit directly to `master`. Use PRs from `release/*` or `hotfix/*`.
 
----
+### Pull Requests
+- PR title uses **Conventional Commits** (e.g., `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`).
+- PR must link to an Issue (user story/task/bug) and include:
+  - What/Why/How (summary), screenshots for UI/docs, and test notes.
+  - ✅ Passing CI (build, tests, coverage) and no critical CodeQL/PMD findings.
+  - ✅ At least **1 reviewer approval** (or team policy).
+- No “self-merge” without explicit team consent on small docs-only changes.
 
-## 9) Reporting & enforcement
+### Issues & User Stories
+- Use clear titles, acceptance criteria, and Definition of Done (DoD).
+- Link Issues to PRs and sprints (Zube).
+- Avoid “catch-all” Issues; split work into reviewable chunks.
 
-If you experience or witness a conduct or academic-integrity issue:
+### Code Quality & Tests
+- Follow style and static analysis (Checkstyle/PMD/CodeQL) with zero **blockers**.
+- Keep unit/integration tests meaningful; **do not** disable tests to pass CI.
+- Maintain or improve coverage on each PR (as agreed threshold).
 
-- **Report privately** to a maintainer:
-  - _Primary:_ **Team Lead / Repo Maintainer** — `<Khant Soe Thwin>`
-  - _Secondary:_ **Module Tutor** — `<k.sim@napier.ac.uk>` (or official channel as instructed)
-- Or open a **confidential issue** with label `conduct` (maintainers will lock the thread to protect privacy).
-
-We will:
-
-1. Acknowledge within **2 working days**.
-2. Review impartially; gather context from all parties.
-3. Decide on actions and follow up in writing.
-
-**Possible actions** (graduated):
-
-- Friendly reminder of this Code; request for change.
-- Written warning in the project spaces; removal of offensive content.
-- Temporary ban from repo interactions; removal from the team.
-- Escalation to course staff for academic or disciplinary action.
-
-We will respect confidentiality to the extent allowed by university policy and safeguarding obligations.
-
-> **Emergency**: If anyone feels unsafe, prioritise immediate help using university channels before contacting maintainers.
+### Documentation
+- Keep README, API docs, diagrams, and evidence table up to date.
+- Update change logs and release notes, linking CI artifacts and Docker images.
 
 ---
 
-## 10) Maintainers & roles (fill in)
-
-- **Team Lead / Release Manager:** `<Khant Soe Thwin>`
-- **CI/CD Maintainer:** `<Khant Soe Thwin>`
-- **Database & Compose Owner:** `<Khant Soe Thwin>`
-- **Documentation Owner:** `<Khant Soe Thwin>`
-- **Module Tutor:** `<k.sim@napier.ac.uk>`
-
-All maintainers are responsible for fair enforcement of this Code.
+## 6) Security, Privacy & Secrets
+- Do **not** commit secrets (tokens, passwords, `.env`) to the repo.
+- Use `.gitignore` and sample files (e.g., `.env.example`).
+- Report suspected vulnerabilities privately (see §9 Reporting); do not open public Issues with sensitive details.
+- Follow Responsible Disclosure (§12).
 
 ---
 
-## 11) Acknowledgements & license
-
-This Code of Conduct is adapted from widely used community standards (e.g., Contributor Covenant v2.1) and tailored to SET09803 coursework and our Java/Maven/Docker/GitHub workflow.
-
----
-
-## 12) Versioning & changes
-
-- Current version: **1.0.0** (2025-10-25)
-- Changes to this Code require a PR, team review, and tutor awareness if required by the coursework brief.
+## 7) Inclusivity & Accessibility
+- Use inclusive language; avoid slang/idioms that reduce clarity.
+- Prefer clear, simple English; summarize long discussions.
+- Provide accessible alternatives (e.g., text with diagrams).
 
 ---
 
-### Quick PR checklist (paste into every PR)
+## 8) Assessment Milestones: Behavior Expectations
 
-- [ ] Linked Issue and clear scope
-- [ ] Conventional Commit title
-- [ ] Updated docs/README where relevant
-- [ ] Tests added/updated; CI green
-- [ ] No secrets committed; `.env.example` updated if config changed
-- [ ] Reviewed by at least one teammate
+### CR1 (Week 6/7)
+- **Governance ready**: Code of Conduct, CONTRIBUTING, Issue templates, GitFlow branches created.
+- **Project hygiene**: Issues and sprints created; Zube integrated; use cases and diagram complete.
+- **Buildability**: Maven builds a self-contained JAR; Dockerfile works; CI builds on PRs/branches.
+- **First release**: Tag and release notes with evidence links (builds, images).
+
+**CR1 Conduct Rules**
+- No force-push to `master`; all changes via PRs.
+- Keep discussions on-topic and respectful in Issues/PRs/meetings.
+- Document all decisions (why we chose X over Y).
+
+### CR2 (Week 12/13)
+- **Quality**: Strong unit/integration tests; CI runs tests; coverage visible; CodeQL enabled.
+- **Deployment**: Container build and run validated.
+- **Badges**: Build (master/develop), coverage (master), latest release, license.
+
+**CR2 Conduct Rules**
+- Do not “silence” failing tests; fix root causes.
+- No bypassing review to “rush” features.
+- Provide traceable evidence for each met requirement.
+
+### Final Delivery
+- **Master is authoritative**: Ensure master contains the assessable version.
+- **Release Management**: Tag final version; freeze master except for critical hotfixes via `hotfix/*`.
+- **Evidence Table**: Completed and accurate, with screenshots and links.
+
+**Final Delivery Conduct Rules**
+- Respect the freeze window; avoid risky merges.
+- Any urgent hotfix must include: Issue, PR review, passing CI, and release notes.
 
 ---
 
-_By contributing to this repository, you agree to abide by this Code of Conduct._
+## 9) Reporting Incidents & Support
+- **Report to:** `<team email or private Slack/Teams channel>` and CC `<module leader/tutor if required by course rules>`.
+- **What to include:** Who/what/where/when; links (Issues/PRs/commits/CI); screenshots or logs; desired outcome.
+- **Confidentiality:** We keep reports as confidential as feasible; details shared on a need-to-know basis.
+- **Anti-retaliation:** Retaliation against anyone reporting in good faith is prohibited.
+
+---
+
+## 10) Enforcement Process & Consequences
+**Maintainers/Moderators:** `<maintainer names or roles>`.
+
+**Process (typical flow)**
+1. **Community note** (public reminder) for minor issues.
+2. **Private warning** with improvement steps and timeline.
+3. **Temporary restrictions** (e.g., blocked from merging, assigned reviewer required).
+4. **Removal or ban** from project spaces for repeated or severe violations.
+5. **Escalation** to module leader if academic integrity or safety is implicated.
+
+**Target timelines (best effort)**
+- **Acknowledge** report within **24 hours** (MMT).
+- **Initial action plan** within **48 hours**.
+- **Resolution** target within **7 days**, or provide status updates.
+
+**Appeals**
+- Send appeal to `<appeals contact>` within 7 days of decision; include new info or rationale.
+
+---
+
+## 11) Release & Freeze Policy (Operational Safety)
+- **Code freeze** applies ahead of Final Delivery; only critical fixes through `hotfix/*`.
+- Each release/hotfix PR must include:
+  - Linked Issue, passing CI, updated version, changelog, and release notes.
+- No last-minute feature merges that reduce stability or evidence quality.
+
+---
+
+## 12) Responsible Disclosure (Security)
+- Email `<security contact>` privately for vulnerabilities.
+- Provide steps to reproduce and impact.
+- Do not create public Issues until a fix/mitigation is available.
+
+---
+
+## 13) Changes to This Code
+- Propose updates via PR to `CODE_OF_CONDUCT.md`.
+- Require at least **2 approvals** during CR windows; document rationale in PR.
+
+---
+
+## 14) Attribution
+This Code is adapted from community best practices, including the spirit of the Contributor Covenant (v2.1), and tailored to Napier SET09803 project workflows.
+
+---
+
+## 15) Contacts (Fill Before Committing)
+- **Primary contact:** `<name> — <email>`
+- **Backup contact:** `<name> — <email>`
+- **Security contact:** `<name> — <email>`
+- **Escalation (module leader/tutor):** `<name> — <email>`
+
+---
+
+## 16) Change History
+- **v1.0.0 — <YYYY-MM-DD>**: Initial version for CR1.
+- **v1.1.0 — <YYYY-MM-DD>**: Updates for CR2 (testing/coverage/enforcement details).
+- **v1.2.0 — <YYYY-MM-DD>**: Final Delivery freeze/hotfix policy.
