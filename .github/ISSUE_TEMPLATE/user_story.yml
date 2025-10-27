@@ -1,36 +1,223 @@
-name: User story
-description: Capture a user story with INVEST + acceptance criteria
-title: "[Story]: <role> needs <capability> to <benefit>"
-labels: ["story"]
+name: "User story"
+description: "INVEST-compliant user story with scope, rules, Gherkin acceptance, and DoD (CR1/CR2 ready)"
+title: "US-RXX: <short capability>"
+labels:
+  - user story
+# assignees: []   # optional
+
 body:
+  - type: markdown
+    attributes:
+      value: |
+        ### How to write this (examiner standard)
+        **As a** <role> • **I want** <capability> • **So that** <business value>
+
+        **Shared rules (keep unless the story clearly differs)**
+        - Sorting: Population **DESC**; ties by **Name ASC**
+        - Filters: **case-insensitive**, trim spaces
+        - Errors: invalid input ⇒ **400**; unknown item ⇒ **404**; empty but valid ⇒ **204**
+        - Report schemas:
+          - **Country**: Code, Name, Continent, Region, Population, Capital
+          - **City**: Name, Country, District, Population
+          - **Capital**: Name, Country, Population
+
+  - type: dropdown
+    id: requirement
+    attributes:
+      label: Requirement mapping (R01–R32)
+      description: "Map this story to the coursework requirement."
+      options:
+        - R01 - Countries (world, all)
+        - R02 - Countries (continent, all)
+        - R03 - Countries (region, all)
+        - R04 - Top-N countries (world)
+        - R05 - Top-N countries (continent)
+        - R06 - Top-N countries (region)
+        - R07 - Cities (world, all)
+        - R08 - Cities (continent, all)
+        - R09 - Cities (region, all)
+        - R10 - Cities (country, all)
+        - R11 - Cities (district, all)
+        - R12 - Top-N cities (world)
+        - R13 - Top-N cities (continent)
+        - R14 - Top-N cities (region)
+        - R15 - Top-N cities (country)
+        - R16 - Top-N cities (district)
+        - R17 - Capitals (world, all)
+        - R18 - Capitals (continent, all)
+        - R19 - Capitals (region, all)
+        - R20 - Top-N capitals (world)
+        - R21 - Top-N capitals (continent)
+        - R22 - Top-N capitals (region)
+        - R23 - Pop in vs not in cities (continent)
+        - R24 - Pop in vs not in cities (region)
+        - R25 - Pop in vs not in cities (country)
+        - R26 - Population of the world
+        - R27 - Population of a continent
+        - R28 - Population of a region
+        - R29 - Population of a country
+        - R30 - Population of a district
+        - R31 - Population of a city
+        - R32 - Languages (counts & % of world)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: epic
+    attributes:
+      label: Epic
+      options:
+        - Countries
+        - Cities
+        - Capitals
+        - Urbanisation (% in cities)
+        - Population lookups
+        - Languages
+        - Docs & Evidence
+    validations:
+      required: true
+
   - type: input
     id: role
     attributes:
       label: As a…
-      placeholder: e.g., API consumer / DevOps student
-    validations: { required: true }
+      placeholder: "data analyst / planner / policy maker / researcher / API consumer / data journalist"
+    validations:
+      required: true
+
   - type: input
-    id: need
+    id: capability
     attributes:
-      label: I need…
-      placeholder: e.g., a /health endpoint returning 200
-    validations: { required: true }
+      label: I want…
+      placeholder: "e.g., a report of all cities in a selected continent sorted by population (desc)"
+    validations:
+      required: true
+
   - type: input
     id: benefit
     attributes:
       label: So that…
-      placeholder: e.g., I can verify service liveness in CI/CD
-    validations: { required: true }
-  - type: textarea
-    id: details
+      placeholder: "e.g., I can analyse continental urban areas"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: dataset_scope
     attributes:
-      label: Details/notes
-      description: Scope, non-goals, links to docs or PRs
+      label: Dataset scope
+      options:
+        - world
+        - continent
+        - region
+        - country
+        - district
+        - N/A
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope_data
+    attributes:
+      label: Scope & Data (exact output fields)
+      value: |
+        Use the official schemas:
+        • Country: Code, Name, Continent, Region, Population, Capital
+        • City: Name, Country, District, Population
+        • Capital: Name, Country, Population
+    validations:
+      required: true
+
+  - type: textarea
+    id: rules
+    attributes:
+      label: Assumptions & Rules
+      value: |
+        • Sorting: Population DESC; ties by Name ASC
+        • Filters: case-insensitive, trims spaces
+        • Validation: invalid input ⇒ 400; unknown ⇒ 404; empty but valid ⇒ 204
+        • Any story-specific rules (e.g., N must be 1..500)
+    validations:
+      required: true
+
   - type: textarea
     id: acceptance
     attributes:
-      label: Acceptance criteria (Given/When/Then)
+      label: Acceptance criteria (Gherkin)
+      description: "3–6 verifiable checks; keep them testable."
+      placeholder: |
+        - Given <seeded DB> When <I request ...> Then <I receive rows sorted by population desc; ties by name asc>
+        - Given <invalid scope> When <I request ...> Then <I receive 400 with a helpful message listing valid values>
+        - Given <N=5> When <I request top-N> Then <I receive exactly 5 rows>
+    validations:
+      required: true
+
+  - type: textarea
+    id: nonfunctional
+    attributes:
+      label: Non-functional constraints
       value: |
-        - [ ] Given … When … Then …
-        - [ ] Given … When … Then …
-    validations: { required: true }
+        • Completes ≤ 1.5s on a typical laptop
+        • Percentages sum to 100% ± 0.1% where relevant
+        • Response formats are stable and documented
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: invest
+    attributes:
+      label: INVEST self-check
+      options:
+        - label: Independent
+        - label: Negotiable
+        - label: Valuable
+        - label: Estimable
+        - label: Small
+        - label: Testable
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options:
+        - P0 - Critical
+        - P1 - High
+        - P2 - Medium
+        - P3 - Low
+    validations:
+      required: true
+
+  - type: input
+    id: story_points
+    attributes:
+      label: Estimate (story points)
+      placeholder: "1 | 2 | 3 | 5 | 8"
+    validations:
+      required: true
+
+  - type: markdown
+    attributes:
+      value: "### Definition of Done (tick below)"
+
+  - type: checkboxes
+    id: dod
+    attributes:
+      label: DoD (CR1/CR2 compliant)
+      options:
+        - label: Unit tests added/updated
+        - label: Integration tests added/updated
+        - label: CI green (build, tests, coverage)
+        - label: CodeQL/PMD no critical findings
+        - label: README endpoints & example updated
+        - label: Evidence table row + screenshot added
+        - label: PR created (base: develop) and linked to this story
+        - label: Linked to parent Epic / Requirement label
+        - label: Reviewer approval obtained
+
+  - type: textarea
+    id: links
+    attributes:
+      label: Links (PRs / endpoints / screenshots)
+      placeholder: |
+        PR: #
+        Endpoint: GET /api/v1/...
+        Evidence screenshot: (attach below)
