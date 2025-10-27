@@ -40,7 +40,9 @@ This project is licensed under the **MIT License** – see [`LICENSE`](./LICENSE
 - **Reviewers / ownership:** [`CODEOWNERS`](.github/CODEOWNERS)
 - **CI/CD:** GitHub Actions workflow at [`.github/workflows/ci.yml`](.github/workflows/ci.yml)
 ---
+GitFlow branching | Met | Screenshot | Used: master, develop, feature/*, release/*; hotfix policy defined (not exercised)
 
+---
 
 ## Table of contents
 

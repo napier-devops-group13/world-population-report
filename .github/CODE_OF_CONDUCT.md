@@ -59,8 +59,8 @@ This Code applies to:
 
 ### Git Strategy (GitFlow)
 - Long-lived branches: `master` (assessed), `develop`.
-- Short-lived: `feature/<scope>`, `release/<version>`, `hotfix/<version>`.
-- **Never** commit directly to `master`. Use PRs from `release/*` or `hotfix/*`.
+- Short-lived: `feature/<scope>`, `release/<version>`, `hotfix/<version>` *(defined for emergencies; none used in this project)*.
+- **Never** commit directly to `master`. Use PRs from `release/*` (or `hotfix/*` **if needed** post-release).
 
 ### Pull Requests
 - PR title uses **Conventional Commits** (e.g., `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`).
@@ -126,7 +126,7 @@ This Code applies to:
 
 ### Final Delivery
 - **Master is authoritative**: Ensure master contains the assessable version.
-- **Release Management**: Tag final version; freeze master except for critical hotfixes via `hotfix/*`.
+- **Release Management**: Tag final version; freeze master. Critical fixes, **if any**, follow `hotfix/*`.
 - **Evidence Table**: Completed and accurate, with screenshots and links.
 
 **Final Delivery Conduct Rules**
@@ -164,7 +164,7 @@ This Code applies to:
 ---
 
 ## 11) Release & Freeze Policy (Operational Safety)
-- **Code freeze** applies ahead of Final Delivery; only critical fixes through `hotfix/*`.
+- **Code freeze** applies ahead of Final Delivery; critical fixes, **if required**, go through `hotfix/*` with review and passing CI.
 - Each release/hotfix PR must include:
   - Linked Issue, passing CI, updated version, changelog, and release notes.
 - No last-minute feature merges that reduce stability or evidence quality.
@@ -190,10 +190,10 @@ This Code is adapted from community best practices, including the spirit of the 
 ---
 
 ## 15) Contacts (Fill Before Committing)
-- **Primary contact:** `<name> — <email>`
-- **Backup contact:** `<name> — <email>`
-- **Security contact:** `<name> — <email>`
-- **Escalation (module leader/tutor):** `<name> — <email>`
+- **Primary contact:** `<Khant Soe Thwin> — <htet.wai.yan.lin.2020.2021.fb@gmail.com>`
+- **Backup contact:** `<HtetWai9671> — <40794704@live.napier.ac.uk>`
+- **Security contact:** `<MoeMyintThawDevOps> — <40794445@live.napier.ac.uk>`
+- **Escalation (module leader/tutor):** `<Dr Kevin Sim> — <k.sim@napier.ac.uk>`
 
 ---
 
