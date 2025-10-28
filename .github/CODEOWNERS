@@ -1,8 +1,12 @@
-# Default owners for everything
-* @napier-devops-group13
+# Default owners for everything (must be valid GitHub users or org teams with write access)
+* @Yamikirito
 
-# CI/CD changes → lead reviewer
-.github/workflows/*  @Yamikirito
+# CI/CD workflows → lead reviewer
+.github/workflows/* @Yamikirito
 
 # Style config → lead reviewer
-config/checkstyle/*  @Yamikirito
+config/checkstyle/* @Yamikirito
+
+# If you create an org team (example: "maintainers") and grant it WRITE,
+# you may switch the default line to the team form below and remove the user-only line:
+# * @napier-devops-group13/maintainers
