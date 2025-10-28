@@ -86,3 +86,20 @@ GitFlow branching | Met | Screenshot | Used: master, develop, feature/*, release
 | 20 | Use cases well defined | âœ… | `docs/evidence/11_use-cases.png` |
 
 ---
+## Team & Contributions (CR1)
+
+This project is a Group 13 submission. The team roster is listed in **TEAM.md**.
+
+### Individual Contribution Declaration — CR1
+As required by SET09803, the percentages below reflect work **completed up to CR1**.
+
+| Member                            | GitHub            | CR1 Contribution (%) |
+|----------------------------------|-------------------|----------------------|
+| **Khant Soe Thwin**              | @Yamikirito       | **100**              |
+| Htet Wai                         | @HtetWai9671      | 0                    |
+| Swam Htet Win                    | @SwamHtetWin10    | 0                    |
+| Zay                              | @Zay12576         | 0                    |
+| Minus Algo                       | @MinusAlgo4       | 0                    |
+| Moe Myint Thaw                   | @MoeMyintThawDevOps | 0                  |
+
+> Declaration: The above reflects contributions before the CR1 deadline. Any subsequent work will be captured in CR2 with updated percentages and evidence (PRs, commits, issues, reviews).
