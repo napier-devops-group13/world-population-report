@@ -1,0 +1,7 @@
+﻿@startuml
+left to right direction
+actor Viewer as V
+V --> (Generate Population Reports)
+V --> (Configure Filters)
+(Generate Population Reports) --> (Query World DB)
+@enduml
