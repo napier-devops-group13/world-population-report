@@ -20,7 +20,7 @@ env:
   MAVEN_OPTS: -Xmx1g -XX:+TieredCompilation -XX:TieredStopAtLevel=1
 
 jobs:
-  # --- Build & Test on JDK 24 with a real MySQL backing service (runs unit + ITs) ---
+  # --- Build & Test on JDK 24 with a real MySQL backing service (unit + ITs) ---
   build-java24:
     name: Build + Tests (JDK 24, shaded JAR, MySQL ITs)
     runs-on: ubuntu-latest
@@ -34,7 +34,6 @@ jobs:
         env:
           MYSQL_ROOT_PASSWORD: root
           MYSQL_DATABASE: world
-        # Health check ensures the service is ready before tests run
         options: >-
           --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot --silent"
           --health-interval=10s
@@ -117,7 +116,6 @@ jobs:
           java-version: '21'
           cache: maven
 
-      # Generate JaCoCo site; we skip enforcer to avoid toolchain strictness in student repos
       - name: Run tests + JaCoCo report
         run: mvn -B -ntp -Denforcer.skip=true test jacoco:report
 
@@ -129,14 +127,6 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-      # Optional: if you add CODECOV_TOKEN secret later, this will publish coverage
-      - name: Upload to Codecov (optional)
-        if: ${{ secrets.CODECOV_TOKEN != '' }}
-        uses: codecov/codecov-action@v4
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          fail_ci_if_error: false
-
   # --- Docker build to validate Dockerfile (meets rubric: "build using JAR and Docker") ---
   docker-build:
     name: Docker build
@@ -146,6 +136,5 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Build Docker image
         run: docker build -t world-population-report:${{ github.sha }} .
