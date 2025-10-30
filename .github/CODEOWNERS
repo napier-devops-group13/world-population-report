@@ -1,8 +1,37 @@
-# Default owners for everything
-* @napier-devops-group13
+# CODEOWNERS — napier-devops-group13/world-population-report
+# Most-specific match wins; if equally specific, the LAST one wins.
+# All owners listed must have WRITE access, otherwise reviews won’t be enforced.
 
-# CI/CD changes → lead reviewer
-.github/workflows/*  @Yamikirito
+# === CI/CD & repo hygiene ===
+.github/workflows/*                 @Yamikirito
+.github/ISSUE_TEMPLATE/*            @HtetWai9671 @Yamikirito
+.github/pull_request_template.md    @HtetWai9671 @Yamikirito
+.github/CODEOWNERS                  @Yamikirito
 
-# Style config → lead reviewer
-config/checkstyle/*  @Yamikirito
+# === Build / quality configuration ===
+pom.xml                             @Yamikirito @SwamHtetWin10
+config/**                           @Yamikirito
+.editorconfig                       @HtetWai9671
+.gitattributes                      @HtetWai9671
+.gitignore                          @HtetWai9671
+
+# === Application code (Java) ===
+src/**                              @Yamikirito @SwamHtetWin10 @MinusAlgo4
+
+# === Database & SQL ===
+db/**                               @MoeMyintThawDevOps @Zay12576
+**/*.sql                            @MoeMyintThawDevOps @Zay12576
+
+# === Containers / DevOps ===
+Dockerfile                          @MinusAlgo4 @Yamikirito
+docker-compose.yml                  @MinusAlgo4 @MoeMyintThawDevOps
+.env.example                        @MinusAlgo4 @MoeMyintThawDevOps
+
+# === Documentation & policy ===
+docs/**                             @HtetWai9671 @Yamikirito
+README.md                           @HtetWai9671
+LICENSE                             @HtetWai9671
+CODE_OF_CONDUCT.md                  @HtetWai9671
+
+# === Default fallback (keep LAST) ===
+*                                   @Yamikirito @HtetWai9671 @SwamHtetWin10 @Zay12576 @MinusAlgo4 @MoeMyintThawDevOps
