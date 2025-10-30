@@ -1,4 +1,4 @@
-﻿# Team (Group 13) — World Population Reporting System
+# Team (Group 13) — World Population Reporting System
 
 | Name              | GitHub Handle         | Suggested Role/Area                                  |
 |-------------------|-----------------------|------------------------------------------------------|

@@ -1,9 +1,9 @@
-# World Population Report (SET09803 · Group 13)
+# World Population Report (SET09803 Â· Group 13)
 
 Minimal, CI-friendly scaffold for the coursework that delivers:
 
 - Java **21+** with **Javalin 5** REST API
-- **Maven** build → **shaded runnable JAR**
+- **Maven** build â†’ **shaded runnable JAR**
 - **Unit tests** + **JaCoCo** coverage
 - **Checkstyle (Google)** + **SpotBugs** gates
 - **Dockerfile (multi-stage)** for a small, reproducible image
@@ -29,7 +29,7 @@ Minimal, CI-friendly scaffold for the coursework that delivers:
 ---
 ## License
 
-This project is licensed under the **MIT License** – see [`LICENSE`](./LICENSE) for details.
+This project is licensed under the **MIT License** â€“ see [`LICENSE`](./LICENSE) for details.
 
 - _Notes_: This coursework uses third-party tools and dependencies (e.g., Javalin, MySQL Docker image) under their own licenses.
 ---
@@ -90,7 +90,7 @@ GitFlow branching | Met | Screenshot | Used: master, develop, feature/*, release
 
 This project is a Group 13 submission. The team roster is listed in **TEAM.md**.
 
-### Individual Contribution Declaration � CR1
+### Individual Contribution Declaration — CR1
 As required by SET09803, the percentages below reflect work **completed up to CR1**.
 
 | Member                            | GitHub            | CR1 Contribution (%) |
