@@ -1,43 +1,82 @@
-﻿name: Project auto-assign & defaults
+name: ci: auto-add issues/PRs to Project + set default fields
 
 on:
   issues:
     types: [opened, reopened, labeled]
-  pull_request_target:
-    types: [opened, reopened]
+  pull_request:
+    types: [opened, reopened, ready_for_review, synchronize]
 
 jobs:
-  to-project:
+  add_and_tag:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       issues: write
       pull-requests: write
-      repository-projects: write
+      projects: write
     steps:
-      - name: Authenticate gh with GITHUB_TOKEN
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Add item (issue/PR) to the org Project
-        env:
-          ORG_LOGIN: ${{ vars.ORG_LOGIN }}
-          PROJECT_NUMBER: ${{ vars.PROJECT_NUMBER }}
-          ITEM_URL: ${{ github.event.issue.html_url || github.event.pull_request.html_url }}
-        run: gh project item-add "$PROJECT_NUMBER" --owner "$ORG_LOGIN" --url "$ITEM_URL"
+      - name: Add to Project
+        uses: actions/add-to-project@v1.0.1
+        with:
+          project-url: https://github.com/orgs/napier-devops-group13/projects/1
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set default fields for new issues
-        if: github.event_name == 'issues'
+      - name: Set default fields (Status=Todo, Type=Task, Assessment=CR1)
         env:
-          ORG_LOGIN: ${{ vars.ORG_LOGIN }}
-          PROJECT_NUMBER: ${{ vars.PROJECT_NUMBER }}
-          ISSUE_NODE_ID: ${{ github.event.issue.node_id }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ORG: napier-devops-group13
+          NUMBER: 1
+        shell: bash
         run: |
-          ITEM_ID=$(gh api graphql -f query='
-            query($owner:String!,$number:Int!){
-              organization(login:$owner){ projectV2(number:$number){
-                items(first:200){ nodes{ id content{ ... on Issue { id } } } }
-              } }
-            }' -F owner="$ORG_LOGIN" -F number="$PROJECT_NUMBER" --jq '.data.organization.projectV2.items.nodes[] | select(.content.id=="'"$ISSUE_NODE_ID"'") | .id')
-          gh project item-edit "$PROJECT_NUMBER" --owner "$ORG_LOGIN" --id "$ITEM_ID" --field "Status"     --value "Todo"
-          gh project item-edit "$PROJECT_NUMBER" --owner "$ORG_LOGIN" --id "$ITEM_ID" --field "Type"       --value "Task"
-          gh project item-edit "$PROJECT_NUMBER" --owner "$ORG_LOGIN" --id "$ITEM_ID" --field "Assessment" --value "CR1"
+          set -euo pipefail
+
+          # Find project id
+          proj_id=$(gh api graphql -F owner=$ORG -F number=$NUMBER -f query='
+            query($owner:String!, $number:Int!){
+              organization(login:$owner){ projectV2(number:$number){ id } }
+            }' --jq '.data.organization.projectV2.id')
+
+          # Find the project item id for this issue/PR
+          url="${{ github.event.pull_request.html_url || github.event.issue.html_url }}"
+          item_id=$(gh api graphql -F url="$url" -f query='
+            query($url: URI!){
+              resource(url:$url){
+                ... on Issue { projectItems(first:10){ nodes{ id project{ id } } } }
+                ... on PullRequest { projectItems(first:10){ nodes{ id project{ id } } } }
+              }
+            }' --jq '.data.resource.projectItems.nodes[] | select(.project.id=="'"$proj_id"'") | .id')
+
+          # Grab field + option ids for Status, Type, Assessment
+          fields=$(gh api graphql -F proj=$proj_id -f query='
+            query($proj:ID!){
+              node(id:$proj){
+                ... on ProjectV2{
+                  fields(first:50){
+                    nodes{
+                      ... on ProjectV2SingleSelectField{ id name options{ id name } }
+                    }
+                  }
+                }
+              }
+            }')
+
+          status_field=$(jq -r '.data.node.fields.nodes[] | select(.name=="Status") | .id' <<<"$fields")
+          status_todo=$(jq -r '.data.node.fields.nodes[] | select(.name=="Status") | .options[] | select(.name=="Todo") | .id' <<<"$fields")
+
+          type_field=$(jq -r '.data.node.fields.nodes[] | select(.name=="Type") | .id' <<<"$fields")
+          type_task=$(jq -r '.data.node.fields.nodes[] | select(.name=="Type") | .options[] | select(.name=="Task") | .id' <<<"$fields")
+
+          assess_field=$(jq -r '.data.node.fields.nodes[] | select(.name=="Assessment") | .id' <<<"$fields")
+          assess_cr1=$(jq -r '.data.node.fields.nodes[] | select(.name=="Assessment") | .options[] | select(.name=="CR1") | .id' <<<"$fields")
+
+          m='mutation($p:ID!,$i:ID!,$f:ID!,$o:ID!){
+            updateProjectV2ItemFieldValue(input:{
+              projectId:$p, itemId:$i, fieldId:$f, value:{singleSelectOptionId:$o}
+            }){ projectV2Item{ id }}}'
+
+          gh api graphql -f query="$m" -F p=$proj_id -F i=$item_id -F f=$status_field  -F o=$status_todo
+          gh api graphql -f query="$m" -F p=$proj_id -F i=$item_id -F f=$type_field    -F o=$type_task
+          gh api graphql -f query="$m" -F p=$proj_id -F i=$item_id -F f=$assess_field  -F o=$assess_cr1
