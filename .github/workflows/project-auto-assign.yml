@@ -1,1 +1,43 @@
-﻿
+﻿name: Project auto-assign & defaults
+
+on:
+  issues:
+    types: [opened, reopened, labeled]
+  pull_request_target:
+    types: [opened, reopened]
+
+jobs:
+  to-project:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+      repository-projects: write
+    steps:
+      - name: Authenticate gh with GITHUB_TOKEN
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+
+      - name: Add item (issue/PR) to the org Project
+        env:
+          ORG_LOGIN: ${{ vars.ORG_LOGIN }}
+          PROJECT_NUMBER: ${{ vars.PROJECT_NUMBER }}
+          ITEM_URL: ${{ github.event.issue.html_url || github.event.pull_request.html_url }}
+        run: gh project item-add "$PROJECT_NUMBER" --owner "$ORG_LOGIN" --url "$ITEM_URL"
+
+      - name: Set default fields for new issues
+        if: github.event_name == 'issues'
+        env:
+          ORG_LOGIN: ${{ vars.ORG_LOGIN }}
+          PROJECT_NUMBER: ${{ vars.PROJECT_NUMBER }}
+          ISSUE_NODE_ID: ${{ github.event.issue.node_id }}
+        run: |
+          ITEM_ID=$(gh api graphql -f query='
+            query($owner:String!,$number:Int!){
+              organization(login:$owner){ projectV2(number:$number){
+                items(first:200){ nodes{ id content{ ... on Issue { id } } } }
+              } }
+            }' -F owner="$ORG_LOGIN" -F number="$PROJECT_NUMBER" --jq '.data.organization.projectV2.items.nodes[] | select(.content.id=="'"$ISSUE_NODE_ID"'") | .id')
+          gh project item-edit "$PROJECT_NUMBER" --owner "$ORG_LOGIN" --id "$ITEM_ID" --field "Status"     --value "Todo"
+          gh project item-edit "$PROJECT_NUMBER" --owner "$ORG_LOGIN" --id "$ITEM_ID" --field "Type"       --value "Task"
+          gh project item-edit "$PROJECT_NUMBER" --owner "$ORG_LOGIN" --id "$ITEM_ID" --field "Assessment" --value "CR1"
