@@ -70,7 +70,7 @@ body:
         - "Countries"
         - "Cities"
         - "Capitals"
-        - "Urbanisation (% in cities)"
+        - "Urbanisation — Population living in cities (%)"
         - "Population lookups"
         - "Languages"
         - "Docs and Evidence"
@@ -159,8 +159,6 @@ body:
         • Completes ≤ 1.5s on a typical laptop
         • Percentages sum to 100% ± 0.1% where relevant
         • Response formats are stable and documented
-    validations:
-      required: false
 
   - type: checkboxes
     id: invest
@@ -186,11 +184,16 @@ body:
     validations:
       required: true
 
-  - type: input
+  - type: dropdown
     id: story_points
     attributes:
       label: "Estimate (story points)"
-      placeholder: "1 | 2 | 3 | 5 | 8"
+      options:
+        - "1"
+        - "2"
+        - "3"
+        - "5"
+        - "8"
     validations:
       required: true
 
