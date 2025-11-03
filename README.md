@@ -24,7 +24,11 @@ Minimal, CI-friendly scaffold for the coursework that delivers:
   <img alt="JDK" src="https://img.shields.io/badge/JDK-21%2B-blue">
   <!-- Docker Compose hint (static badge) -->
   <img alt="Compose" src="https://img.shields.io/badge/Docker-Compose-green">
+
 </p>
+[![CI](https://github.com/napier-devops-group13/world-population-report/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/napier-devops-group13/world-population-report/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/napier-devops-group13/world-population-report/branch/master/graph/badge.svg)](https://app.codecov.io/gh/napier-devops-group13/world-population-report)
+
 
 ---
 ## License
