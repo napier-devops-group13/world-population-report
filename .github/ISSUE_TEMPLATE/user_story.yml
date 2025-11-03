@@ -105,6 +105,7 @@ body:
     id: dataset_scope
     attributes:
       label: "Dataset scope"
+      description: "Choose the data region this story queries. Use N/A for single-item lookups (e.g., a specific city)."
       options:
         - "world"
         - "continent"
