@@ -1,4 +1,4 @@
-﻿name: "ci – auto-add issues/PRs to Project"
+﻿# name: "ci - auto-add issues/PRs to Project"
 
 on:
   issues:
@@ -10,7 +10,7 @@ permissions:
   contents: read
   issues: write
   pull-requests: write
-  projects: write
+  repository-projects: write   # <-- was 'projects'; this is the valid key
 
 jobs:
   add_to_project:
