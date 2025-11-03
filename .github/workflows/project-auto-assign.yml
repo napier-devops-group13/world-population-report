@@ -1,4 +1,4 @@
-name: ci: auto-add issues/PRs to Project + set default fields
+﻿# name: "ci - auto-add issues/PRs to Project"
 
 on:
   issues:
@@ -6,77 +6,26 @@ on:
   pull_request:
     types: [opened, reopened, ready_for_review, synchronize]
 
-jobs:
-  add_and_tag:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      issues: write
-      pull-requests: write
-      projects: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+  repository-projects: write   # <-- was 'projects'; this is the valid key
 
-      - name: Add to Project
-        uses: actions/add-to-project@v1.0.1
+jobs:
+  add_to_project:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add issue to project
+        if: ${{ github.event_name == 'issues' }}
+        uses: actions/add-to-project@v0.6.1
         with:
           project-url: https://github.com/orgs/napier-devops-group13/projects/1
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set default fields (Status=Todo, Type=Task, Assessment=CR1)
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ORG: napier-devops-group13
-          NUMBER: 1
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          # Find project id
-          proj_id=$(gh api graphql -F owner=$ORG -F number=$NUMBER -f query='
-            query($owner:String!, $number:Int!){
-              organization(login:$owner){ projectV2(number:$number){ id } }
-            }' --jq '.data.organization.projectV2.id')
-
-          # Find the project item id for this issue/PR
-          url="${{ github.event.pull_request.html_url || github.event.issue.html_url }}"
-          item_id=$(gh api graphql -F url="$url" -f query='
-            query($url: URI!){
-              resource(url:$url){
-                ... on Issue { projectItems(first:10){ nodes{ id project{ id } } } }
-                ... on PullRequest { projectItems(first:10){ nodes{ id project{ id } } } }
-              }
-            }' --jq '.data.resource.projectItems.nodes[] | select(.project.id=="'"$proj_id"'") | .id')
-
-          # Grab field + option ids for Status, Type, Assessment
-          fields=$(gh api graphql -F proj=$proj_id -f query='
-            query($proj:ID!){
-              node(id:$proj){
-                ... on ProjectV2{
-                  fields(first:50){
-                    nodes{
-                      ... on ProjectV2SingleSelectField{ id name options{ id name } }
-                    }
-                  }
-                }
-              }
-            }')
-
-          status_field=$(jq -r '.data.node.fields.nodes[] | select(.name=="Status") | .id' <<<"$fields")
-          status_todo=$(jq -r '.data.node.fields.nodes[] | select(.name=="Status") | .options[] | select(.name=="Todo") | .id' <<<"$fields")
-
-          type_field=$(jq -r '.data.node.fields.nodes[] | select(.name=="Type") | .id' <<<"$fields")
-          type_task=$(jq -r '.data.node.fields.nodes[] | select(.name=="Type") | .options[] | select(.name=="Task") | .id' <<<"$fields")
-
-          assess_field=$(jq -r '.data.node.fields.nodes[] | select(.name=="Assessment") | .id' <<<"$fields")
-          assess_cr1=$(jq -r '.data.node.fields.nodes[] | select(.name=="Assessment") | .options[] | select(.name=="CR1") | .id' <<<"$fields")
-
-          m='mutation($p:ID!,$i:ID!,$f:ID!,$o:ID!){
-            updateProjectV2ItemFieldValue(input:{
-              projectId:$p, itemId:$i, fieldId:$f, value:{singleSelectOptionId:$o}
-            }){ projectV2Item{ id }}}'
-
-          gh api graphql -f query="$m" -F p=$proj_id -F i=$item_id -F f=$status_field  -F o=$status_todo
-          gh api graphql -f query="$m" -F p=$proj_id -F i=$item_id -F f=$type_field    -F o=$type_task
-          gh api graphql -f query="$m" -F p=$proj_id -F i=$item_id -F f=$assess_field  -F o=$assess_cr1
+      - name: Add PR to project
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: actions/add-to-project@v0.6.1
+        with:
+          project-url: https://github.com/orgs/napier-devops-group13/projects/1
+          github-token: ${{ secrets.GITHUB_TOKEN }}

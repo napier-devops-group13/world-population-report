@@ -3,9 +3,9 @@ name: CI
 
 on:
   push:
-    branches: [master, develop, "release/**"]
+    branches: [ master, develop, "release/**" ]
   pull_request:
-    branches: [master, develop]
+    branches: [ master, develop ]
   workflow_dispatch:
 
 # cancel older runs of the same ref to save minutes
@@ -13,6 +13,7 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# default least-privilege; jobs can elevate if needed
 permissions:
   contents: read
 
@@ -105,6 +106,15 @@ jobs:
     name: Coverage (JDK 21, JaCoCo)
     runs-on: ubuntu-latest
     timeout-minutes: 15
+
+    # Give this job just enough permission to publish a check/status
+    permissions:
+      contents: read
+      checks: write
+      statuses: write
+      pull-requests: write
+      id-token: write     # required for OIDC (no secret token needed)
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -119,7 +129,7 @@ jobs:
       - name: Run tests + JaCoCo report
         run: mvn -B -ntp -Denforcer.skip=true test jacoco:report
 
-      - name: Upload JaCoCo HTML report
+      - name: Upload JaCoCo HTML report (artifact)
         uses: actions/upload-artifact@v4
         with:
           name: jacoco-report
@@ -127,11 +137,20 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+      - name: Upload coverage to Codecov (OIDC, no secret)
+        uses: codecov/codecov-action@v4
+        with:
+          slug: napier-devops-group13/world-population-report
+          files: target/site/jacoco/jacoco.xml
+          use_oidc: true
+          fail_ci_if_error: true
+          verbose: false
+
   # --- Docker build to validate Dockerfile (meets rubric: "build using JAR and Docker") ---
   docker-build:
     name: Docker build
     runs-on: ubuntu-latest
-    needs: [build-java24]
+    needs: [ build-java24 ]
     timeout-minutes: 15
     steps:
       - name: Checkout

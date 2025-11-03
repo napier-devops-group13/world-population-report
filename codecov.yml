@@ -1,0 +1,19 @@
+# codecov.yml (repo root)
+codecov:
+  require_ci_to_pass: true
+
+coverage:
+  precision: 2
+  round: down
+  status:
+    project:
+      default:
+        target: 60%       # CR2 asks for tests & coverage; set a realistic pass bar
+        threshold: 2%     # small wiggle room to avoid flaky fails
+    patch:
+      default:
+        target: 50%       # new/changed lines should keep decent coverage
+
+comment:
+  layout: "reach, diff, flags, files, components"
+  require_changes: true
