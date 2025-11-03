@@ -1,4 +1,5 @@
-﻿name: ci - auto-add issues/PRs to Project
+﻿# .github/workflows/project-auto-assign.yml
+name: ci - auto-add issues/PRs to Project
 
 on:
   issues:
@@ -6,10 +7,12 @@ on:
   pull_request:
     types: [opened, ready_for_review, reopened, synchronize, labeled]
 
+# Required so the workflow can add items to your Project V2
 permissions:
   contents: read
   issues: write
   pull-requests: write
+  projects: write
 
 jobs:
   add_to_project:
@@ -17,8 +20,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Add current item (issue/PR) to Project
+        # Avoid failing on PRs from forks (secrets aren’t available to them)
+        if: ${{ github.event_name == 'issues' || github.event.pull_request.head.repo.fork == false }}
         uses: actions/add-to-project@v0.6.1
         with:
-          # 👉 make sure this URL matches your org project exactly
-          project-url: https://github.com/orgs/napier-devops-group13/projects/1
+          # 👉 Use the exact URL of your org Project V2
+          # e.g., https://github.com/orgs/napier-devops-group13/projects/1
+          project-url: https://github.com/orgs/napier-devops-group13/projects/<NUMBER>
+          # 👉 Classic PAT saved as repo secret ORG_PROJECTS_TOKEN
           github-token: ${{ secrets.ORG_PROJECTS_TOKEN }}
