@@ -7,12 +7,12 @@ on:
   pull_request:
     types: [opened, ready_for_review, reopened, synchronize, labeled]
 
-# Required so the workflow can add items to your Project V2
+# Note: 'projects' is NOT a valid permission key → use 'repository-projects' or omit.
 permissions:
   contents: read
   issues: write
   pull-requests: write
-  projects: write
+  repository-projects: write
 
 jobs:
   add_to_project:
@@ -20,12 +20,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Add current item (issue/PR) to Project
-        # Avoid failing on PRs from forks (secrets aren’t available to them)
-        if: ${{ github.event_name == 'issues' || github.event.pull_request.head.repo.fork == false }}
+        # Skip forked PRs (secrets don't pass to forks)
+        if: ${{ github.event_name == 'issues' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false) }}
         uses: actions/add-to-project@v0.6.1
         with:
-          # 👉 Use the exact URL of your org Project V2
-          # e.g., https://github.com/orgs/napier-devops-group13/projects/1
-          project-url: https://github.com/orgs/napier-devops-group13/projects/<NUMBER>
-          # 👉 Classic PAT saved as repo secret ORG_PROJECTS_TOKEN
+          # Use the exact URL of your Org Project V2 (check the number in your browser)
+          project-url: https://github.com/orgs/napier-devops-group13/projects/1
+          # Classic PAT stored as a repo or org secret with scopes: repo, project, read:org, workflow
           github-token: ${{ secrets.ORG_PROJECTS_TOKEN }}
