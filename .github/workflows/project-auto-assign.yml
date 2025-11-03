@@ -1,31 +1,24 @@
-﻿# name: "ci - auto-add issues/PRs to Project"
+﻿name: ci - auto-add issues/PRs to Project
 
 on:
   issues:
-    types: [opened, reopened, labeled]
+    types: [opened, labeled, reopened]
   pull_request:
-    types: [opened, reopened, ready_for_review, synchronize]
+    types: [opened, ready_for_review, reopened, synchronize, labeled]
 
 permissions:
   contents: read
   issues: write
   pull-requests: write
-  repository-projects: write   # <-- was 'projects'; this is the valid key
 
 jobs:
   add_to_project:
+    name: Add to org Project V2
     runs-on: ubuntu-latest
     steps:
-      - name: Add issue to project
-        if: ${{ github.event_name == 'issues' }}
+      - name: Add current item (issue/PR) to Project
         uses: actions/add-to-project@v0.6.1
         with:
+          # 👉 make sure this URL matches your org project exactly
           project-url: https://github.com/orgs/napier-devops-group13/projects/1
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Add PR to project
-        if: ${{ github.event_name == 'pull_request' }}
-        uses: actions/add-to-project@v0.6.1
-        with:
-          project-url: https://github.com/orgs/napier-devops-group13/projects/1
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.ORG_PROJECTS_TOKEN }}
