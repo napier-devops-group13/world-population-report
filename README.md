@@ -1,68 +1,52 @@
-# World Population Report (SET09803 Â· Group 13)
-
-Minimal, CI-friendly scaffold for the coursework that delivers:
-
-- Java **21+** with **Javalin 5** REST API
-- **Maven** build â†’ **shaded runnable JAR**
-- **Unit tests** + **JaCoCo** coverage
-- **Checkstyle (Google)** + **SpotBugs** gates
-- **Dockerfile (multi-stage)** for a small, reproducible image
-- **docker compose** stack with **MySQL 8.4** auto-seeded from `db/init/01-world.sql`
-- **/ready** and **/health** endpoints
-- Issue Forms (bug / feature / user story), PR template, CODEOWNERS, **Code of Conduct**
+# World Population Report (SET09803 - Group 13)
 
 <p align="left">
   <!-- CI -->
-  <a href="https://github.com/napier-devops-group13/world-population-report/actions/workflows/ci.yml">
-    <img alt="CI" src="https://github.com/napier-devops-group13/world-population-report/actions/workflows/ci.yml/badge.svg">
+  <a href="https://github.com/napier-devops-group13/world-population-report/actions/workflows/ci.yml?query=branch%3Amaster">
+    <img alt="CI (master)" src="https://github.com/napier-devops-group13/world-population-report/actions/workflows/ci.yml/badge.svg?branch=master">
   </a>
-  <!-- License -->
-  <a href="https://github.com/napier-devops-group13/world-population-report/blob/develop/LICENSE">
+  <a href="https://github.com/napier-devops-group13/world-population-report/actions/workflows/ci.yml?query=branch%3Adevelop">
+    <img alt="CI (develop)" src="https://github.com/napier-devops-group13/world-population-report/actions/workflows/ci.yml/badge.svg?branch=develop">
+  </a>
+  <!-- Coverage -->
+  <a href="https://app.codecov.io/gh/napier-devops-group13/world-population-report">
+    <img alt="Coverage" src="https://codecov.io/gh/napier-devops-group13/world-population-report/branch/master/graph/badge.svg">
+  </a>
+  <!-- Release + License + Tech hints -->
+  <a href="https://github.com/napier-devops-group13/world-population-report/releases">
+    <img alt="Release" src="https://img.shields.io/github/v/release/napier-devops-group13/world-population-report">
+  </a>
+  <a href="LICENSE">
     <img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg">
   </a>
-  <!-- JDK hint (static badge) -->
   <img alt="JDK" src="https://img.shields.io/badge/JDK-21%2B-blue">
-  <!-- Docker Compose hint (static badge) -->
   <img alt="Compose" src="https://img.shields.io/badge/Docker-Compose-green">
-
 </p>
-[![CI](https://github.com/napier-devops-group13/world-population-report/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/napier-devops-group13/world-population-report/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/napier-devops-group13/world-population-report/branch/master/graph/badge.svg)](https://app.codecov.io/gh/napier-devops-group13/world-population-report)
 
+Minimal, CI-friendly scaffold for the coursework that delivers:
 
----
-## License
-
-This project is licensed under the **MIT License** â€“ see [`LICENSE`](./LICENSE) for details.
-
-- _Notes_: This coursework uses third-party tools and dependencies (e.g., Javalin, MySQL Docker image) under their own licenses.
----
-## Project metadata
-
-- **Code of Conduct:** see [`.github/CODE_OF_CONDUCT.md`](.github/CODE_OF_CONDUCT.md)
-- **Issue templates:** user story, bug, and feature in [`.github/ISSUE_TEMPLATE/`](.github/ISSUE_TEMPLATE/)
-- **Reviewers / ownership:** [`CODEOWNERS`](.github/CODEOWNERS)
-- **CI/CD:** GitHub Actions workflow at [`.github/workflows/ci.yml`](.github/workflows/ci.yml)
----
-GitFlow branching | Met | Screenshot | Used: master, develop, feature/*, release/*; hotfix policy defined (not exercised)
+- Java 21+ with Javalin 5 REST API
+- Maven build (shaded runnable JAR)
+- Unit tests + JaCoCo coverage
+- Checkstyle (Google) + SpotBugs gates
+- Dockerfile (multi-stage) for a small, reproducible image
+- `docker compose` stack with MySQL 8.4 auto-seeded from `db/init/01-world.sql`
+- `/ready` and `/health` endpoints
+- PR template, CODEOWNERS, Code of Conduct, Issue templates
 
 ---
 
-## Table of contents
-
-- [1) Prerequisites](#1-prerequisites)
-- [2) Quick start](#2-quick-start)
-- [3) Configuration](#3-configuration)
-- [4) API](#4-api)
-- [5) Build, test & quality gates](#5-build-test--quality-gates)
-- [6) Run with Docker Compose](#6-run-with-docker-compose)
-- [7) Project structure](#7-project-structure)
-- [8) CI/CD](#8-cicd)
-- [9) Collaboration workflow (Assessment GitFlow)](#9-collaboration-workflow-assessment-gitflow)
-- [10) Contributing & Community](#10-contributing--community)
-- [11) Troubleshooting](#11-troubleshooting)
+## Table of Contents
+- [Quick Start](#quick-start)
+- [API Endpoints](#api-endpoints)
+- [Database & Seeding](#database--seeding)
+- [Project Structure](#project-structure)
+- [CI/CD & Quality](#cicd--quality)
+- [Assessment Evidence (CR1/CR2/Final)](#assessment-evidence-cr1cr2final)
+- [License](#license)
 
 ---
+
 
 ## CR1 Evidence (Screenshots)
 
