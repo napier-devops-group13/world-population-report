@@ -1,5 +1,4 @@
-﻿# .github/workflows/project-auto-assign.yml
-name: ci - auto-add issues/PRs to Project
+﻿name: ci - auto-add issues/PRs to Project
 
 on:
   issues:
@@ -7,12 +6,11 @@ on:
   pull_request:
     types: [opened, ready_for_review, reopened, synchronize, labeled]
 
-# These affect the default GITHUB_TOKEN (we also pass a PAT below)
 permissions:
   contents: read
   issues: write
   pull-requests: write
-  repository-projects: write   # correct key (NOT "projects")
+  repository-projects: write   # <- correct permission key
 
 jobs:
   add_to_project:
@@ -20,6 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Add current item (issue/PR) to Project
+        # Skip forks so secrets don't leak
         if: ${{ github.event_name == 'issues' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false) }}
         uses: actions/add-to-project@v0.6.1
         with:
