@@ -8,7 +8,9 @@ import io.javalin.http.Context;
 import io.javalin.http.HttpStatus;
 import java.util.Map;
 
-/** Application bootstrap: wires Javalin, repo, and routes for R01–R06 (Country reports). */
+/**
+ * Application bootstrap: wires Javalin, repo, and routes for R01–R06 (Country reports).
+ */
 public final class App {
 
     private App() { }
@@ -49,46 +51,55 @@ public final class App {
 
     /** Register REST routes (R01–R06). */
     public static void registerRoutes(final Javalin app, final WorldRepo repo, final String prefix) {
-        final String p = prefix == null ? "" : prefix;
+        final String p = (prefix == null) ? "" : prefix;
 
         // Helper: check ?sort=pop (case-insensitive)
-        java.util.function.Function<Context, Boolean> sortByPop =
-            ctx -> {
-                String s = ctx.queryParam("sort");
-                return s != null && "pop".equalsIgnoreCase(s.trim());
-            };
+        java.util.function.Function<Context, Boolean> sortByPop = ctx -> {
+            String s = ctx.queryParam("sort");
+            return s != null && "pop".equalsIgnoreCase(s.trim());
+        };
 
         // Helper: parse positive integer for top-N endpoints
-        java.util.function.Function<Context, Integer> parsePositiveN =
-            ctx -> {
-                String raw = ctx.pathParam("n");
-                try {
-                    int n = Integer.parseInt(raw);
-                    if (n <= 0) throw new IllegalArgumentException("n must be > 0");
-                    return n;
-                } catch (NumberFormatException nfe) {
-                    throw new IllegalArgumentException("n must be a positive integer");
+        java.util.function.Function<Context, Integer> parsePositiveN = ctx -> {
+            String raw = ctx.pathParam("n");
+            try {
+                int n = Integer.parseInt(raw);
+                if (n <= 0) {
+                    throw new IllegalArgumentException("n must be > 0");
                 }
-            };
+                return n;
+            } catch (NumberFormatException nfe) {
+                throw new IllegalArgumentException("n must be a positive integer");
+            }
+        };
 
         // R01: all countries (world)
         app.get(p + "/countries/world", ctx -> {
-            if (sortByPop.apply(ctx)) ctx.json(repo.countriesWorldByPopulation());
-            else ctx.json(repo.countriesWorld());
+            if (sortByPop.apply(ctx)) {
+                ctx.json(repo.countriesWorldByPopulation());
+            } else {
+                ctx.json(repo.countriesWorld());
+            }
         });
 
         // R02: all countries in a continent
         app.get(p + "/countries/continent/{continent}", ctx -> {
             String continent = ctx.pathParam("continent");
-            if (sortByPop.apply(ctx)) ctx.json(repo.countriesByContinentByPopulation(continent));
-            else ctx.json(repo.countriesByContinent(continent));
+            if (sortByPop.apply(ctx)) {
+                ctx.json(repo.countriesByContinentByPopulation(continent));
+            } else {
+                ctx.json(repo.countriesByContinent(continent));
+            }
         });
 
         // R03: all countries in a region
         app.get(p + "/countries/region/{region}", ctx -> {
             String region = ctx.pathParam("region");
-            if (sortByPop.apply(ctx)) ctx.json(repo.countriesByRegionByPopulation(region));
-            else ctx.json(repo.countriesByRegion(region));
+            if (sortByPop.apply(ctx)) {
+                ctx.json(repo.countriesByRegionByPopulation(region));
+            } else {
+                ctx.json(repo.countriesByRegion(region));
+            }
         });
 
         // R04: top-N countries (world)

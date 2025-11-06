@@ -208,12 +208,12 @@ As required by SET09803, the percentages below reflect work **completed up to CR
 
 | Member              | GitHub              | CR1 Contribution (%) |
 |---------------------|---------------------|----------------------|
-| **Khant Soe Thwin** | @Yamikirito         | **100**              |
-| Htet Wai Yan Lin    | @HtetWai9671        | 0                    |
-| Swam Htet Win       | @SwamHtetWin10      | 0                    |
-| Zay Lin Myat        | @Zay12576           | 0                    |
-| Naing Lin Aung      | @MinusAlgo4         | 0                    |
-| Moe Myint Thaw      | @MoeMyintThawDevOps | 0                    |
+| **Khant Soe Thwin** | @Yamikirito         | **70**               |
+| Htet Wai Yan Lin    | @HtetWai9671        | 50                   |
+| Swam Htet Win       | @SwamHtetWin10      | 50                   |
+| Zay Lin Myat        | @Zay12576           | 50                   |
+| Naing Lin Aung      | @MinusAlgo4         | 50                   |
+| Moe Myint Thaw      | @MoeMyintThawDevOps | 50                   |
 
 > Declaration: The above reflects contributions before the CR1 deadline. Any subsequent work will be captured in CR2 with updated percentages and evidence (PRs, commits, issues, reviews).
 ---
@@ -222,14 +222,14 @@ As required by SET09803, the percentages below reflect work **completed up to CR
 
 Base URL: `http://localhost:7070`
 
-| ID  | Endpoint                                      | Notes                                                                 |
-|:---:|-----------------------------------------------|------------------------------------------------------------------------|
-| R01 | `GET /countries/world`                        | All countries (world). Optional sort by population: `?sort=pop`       |
-| R02 | `GET /countries/continent/{continent}`        | All countries in a continent. Optional `?sort=pop`                     |
-| R03 | `GET /countries/region/{region}`              | All countries in a region. Optional `?sort=pop`                        |
-| R04 | `GET /countries/world/top/{n}`                | Top-N countries (world) by population                                  |
-| R05 | `GET /countries/continent/{continent}/top/{n}`| Top-N countries in the given continent                                 |
-| R06 | `GET /countries/region/{region}/top/{n}`      | Top-N countries in the given region                                    |
+| ID  | Endpoint                                       | Notes                                                       | Met |
+|-----|------------------------------------------------|-------------------------------------------------------------|:---:|
+| R01 | `GET /countries/world`                         | All countries (world). Optional sort by population: `?sort=pop`. | ✅ |
+| R02 | `GET /countries/continent/{continent}`         | All countries in a continent. Optional `?sort=pop`.         | ✅ |
+| R03 | `GET /countries/region/{region}`               | All countries in a region. Optional `?sort=pop`.            | ✅ |
+| R04 | `GET /countries/world/top/{n}`                 | Top-N countries (world) by population.                      | ✅ |
+| R05 | `GET /countries/continent/{continent}/top/{n}` | Top-N countries in the given continent.                     | ✅ |
+| R06 | `GET /countries/region/{region}/top/{n}`       | Top-N countries in the given region.                        | ✅ |
 
 **Error handling (for evidence):**
 - `n <= 0` or non-integer → **400** with JSON body: `{"error":"n must be > 0"}` or `{"error":"n must be a positive integer"}`.
