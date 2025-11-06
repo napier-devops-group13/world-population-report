@@ -6,33 +6,41 @@
 
   <groupId>com.group13.population</groupId>
   <artifactId>world-population-report</artifactId>
-  <version>$mnext</version>
+  <version>0.2.0-SNAPSHOT</version>
   <name>world-population-report</name>
   <description>SET09803 World Population Reporting API (Javalin + Maven + Docker)</description>
   <packaging>jar</packaging>
 
   <properties>
-    <!-- Compile to Java 21 bytecode -->
+    <!-- Java / toolchain -->
     <maven.compiler.release>21</maven.compiler.release>
     <min.java.version>21</min.java.version>
 
+    <!-- Encodings -->
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-    <!-- Libraries -->
+    <!-- Library versions -->
     <junit.version>5.10.2</junit.version>
     <javalin.version>5.6.3</javalin.version>
     <slf4j.version>2.0.13</slf4j.version>
     <mysql.version>8.4.0</mysql.version>
+    <jackson.version>2.17.2</jackson.version>
 
-    <!-- Tools -->
+    <!-- Plugin versions -->
+    <enforcer.plugin.version>3.5.0</enforcer.plugin.version>
+    <compiler.plugin.version>3.13.0</compiler.plugin.version>
+    <surefire.plugin.version>3.5.0</surefire.plugin.version>
+    <failsafe.plugin.version>3.5.0</failsafe.plugin.version>
     <checkstyle.plugin.version>3.3.1</checkstyle.plugin.version>
     <checkstyle.engine.version>10.17.0</checkstyle.engine.version>
     <spotbugs.plugin.version>4.8.6.5</spotbugs.plugin.version>
-    <jacoco.version>0.8.13</jacoco.version> <!-- supports Java 24 -->
+    <shade.plugin.version>3.6.0</shade.plugin.version>
+    <jacoco.version>0.8.13</jacoco.version>
 
-    <!-- Allow skipping coverage from CLI: -Djacoco.skip=true -->
-    <jacoco.skip>false</jacoco.skip>
+    <!-- Toggles -->
+    <jacoco.skip>false</jacoco.skip>   <!-- -Djacoco.skip=true to skip coverage -->
+    <skipITs>false</skipITs>           <!-- -DskipITs=true to skip integration tests -->
   </properties>
 
   <dependencies>
@@ -51,7 +59,7 @@
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
-      <version>2.17.2</version>
+      <version>${jackson.version}</version>
     </dependency>
 
     <dependency>
@@ -60,6 +68,7 @@
       <version>${mysql.version}</version>
     </dependency>
 
+    <!-- JUnit 5 -->
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter</artifactId>
@@ -72,11 +81,11 @@
     <finalName>${project.artifactId}</finalName>
 
     <plugins>
-      <!-- Enforce toolchain versions -->
+      <!-- Enforce tool versions -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-enforcer-plugin</artifactId>
-        <version>3.5.0</version>
+        <version>${enforcer.plugin.version}</version>
         <executions>
           <execution>
             <goals><goal>enforce</goal></goals>
@@ -98,23 +107,58 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.13.0</version>
+        <version>${compiler.plugin.version}</version>
         <configuration>
           <release>${maven.compiler.release}</release>
         </configuration>
       </plugin>
 
-      <!-- Tests -->
+      <!-- Unit tests (no DB) -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>3.5.0</version>
+        <version>${surefire.plugin.version}</version>
         <configuration>
           <useModulePath>false</useModulePath>
+          <includes>
+            <include>**/*Test.java</include>
+          </includes>
+          <excludes>
+            <exclude>**/*IT.java</exclude>
+          </excludes>
         </configuration>
       </plugin>
 
-      <!-- Coverage (JaCoCo) -->
+      <!-- Integration tests (with DB) -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <version>${failsafe.plugin.version}</version>
+        <configuration>
+          <skipITs>${skipITs}</skipITs>
+          <includes>
+            <include>**/*IT.java</include>
+          </includes>
+          <!-- pass-through DB_* if set in environment -->
+          <systemPropertyVariables>
+            <DB_HOST>${env.DB_HOST}</DB_HOST>
+            <DB_PORT>${env.DB_PORT}</DB_PORT>
+            <DB_NAME>${env.DB_NAME}</DB_NAME>
+            <DB_USER>${env.DB_USER}</DB_USER>
+            <DB_PASS>${env.DB_PASS}</DB_PASS>
+          </systemPropertyVariables>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- JaCoCo coverage -->
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
@@ -127,24 +171,24 @@
             <id>jacoco-prepare-agent</id>
             <goals><goal>prepare-agent</goal></goals>
             <configuration>
-              <!-- Don’t touch JDK classes on Java 24 -->
               <includes>
                 <include>com/group13/**</include>
               </includes>
               <excludes>
                 <exclude>**/*Test*</exclude>
+                <exclude>**/*IT*</exclude>
               </excludes>
             </configuration>
           </execution>
           <execution>
-            <id>report</id>
+            <id>jacoco-report</id>
             <phase>verify</phase>
             <goals><goal>report</goal></goals>
           </execution>
         </executions>
       </plugin>
 
-      <!-- Checkstyle -->
+      <!-- Checkstyle (uses files in config/checkstyle/) -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-checkstyle-plugin</artifactId>
@@ -157,7 +201,6 @@
           </dependency>
         </dependencies>
         <configuration>
-          <!-- Use paths relative to project root -->
           <configLocation>config/checkstyle/google_checks.xml</configLocation>
           <suppressionsLocation>config/checkstyle/suppressions.xml</suppressionsLocation>
           <consoleOutput>true</consoleOutput>
@@ -173,7 +216,7 @@
         </executions>
       </plugin>
 
-      <!-- SpotBugs -->
+      <!-- SpotBugs static analysis -->
       <plugin>
         <groupId>com.github.spotbugs</groupId>
         <artifactId>spotbugs-maven-plugin</artifactId>
@@ -191,11 +234,11 @@
         </executions>
       </plugin>
 
-      <!-- Shade runnable JAR -->
+      <!-- Runnable shaded JAR -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
-        <version>3.6.0</version>
+        <version>${shade.plugin.version}</version>
         <executions>
           <execution>
             <phase>package</phase>
@@ -205,6 +248,11 @@
               <transformers>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <mainClass>com.group13.population.App</mainClass>
+                  <manifestEntries>
+                    <Implementation-Title>${project.name}</Implementation-Title>
+                    <Implementation-Version>${project.version}</Implementation-Version>
+                    <Implementation-Vendor>Group 13</Implementation-Vendor>
+                  </manifestEntries>
                 </transformer>
               </transformers>
             </configuration>
