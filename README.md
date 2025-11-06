@@ -217,6 +217,45 @@ As required by SET09803, the percentages below reflect work **completed up to CR
 
 > Declaration: The above reflects contributions before the CR1 deadline. Any subsequent work will be captured in CR2 with updated percentages and evidence (PRs, commits, issues, reviews).
 ---
+
+## Country Report — API (R01–R06)
+
+Base URL: `http://localhost:7070`
+
+| ID  | Endpoint                                      | Notes                                                                 |
+|:---:|-----------------------------------------------|------------------------------------------------------------------------|
+| R01 | `GET /countries/world`                        | All countries (world). Optional sort by population: `?sort=pop`       |
+| R02 | `GET /countries/continent/{continent}`        | All countries in a continent. Optional `?sort=pop`                     |
+| R03 | `GET /countries/region/{region}`              | All countries in a region. Optional `?sort=pop`                        |
+| R04 | `GET /countries/world/top/{n}`                | Top-N countries (world) by population                                  |
+| R05 | `GET /countries/continent/{continent}/top/{n}`| Top-N countries in the given continent                                 |
+| R06 | `GET /countries/region/{region}/top/{n}`      | Top-N countries in the given region                                    |
+
+**Error handling (for evidence):**
+- `n <= 0` or non-integer → **400** with JSON body: `{"error":"n must be > 0"}` or `{"error":"n must be a positive integer"}`.
+- Invalid path variables return **400**/**404** depending on your repo lookups.
+
+### Quick local checks (PowerShell)
+```powershell
+# Start the app (separate terminal) after `mvn -q -ntp -DskipITs package`
+java -jar target/world-population-report.jar
+
+# Sorted lists
+curl.exe -s "http://localhost:7070/countries/world?sort=pop" | ConvertFrom-Json | Select-Object -First 1
+curl.exe -s "http://localhost:7070/countries/continent/Asia?sort=pop" | ConvertFrom-Json | Select-Object -First 1
+curl.exe -s "http://localhost:7070/countries/region/Eastern%20Asia?sort=pop" | ConvertFrom-Json | Select-Object -First 1
+
+# Top-N
+curl.exe -s "http://localhost:7070/countries/world/top/5" | ConvertFrom-Json | Measure-Object
+curl.exe -s "http://localhost:7070/countries/continent/Europe/top/5" | ConvertFrom-Json | Measure-Object
+curl.exe -s "http://localhost:7070/countries/region/Eastern%20Asia/top/5" | ConvertFrom-Json | Measure-Object
+
+# 400 proofs (bad input)
+curl.exe -i "http://localhost:7070/countries/world/top/0"
+curl.exe -i "http://localhost:7070/countries/continent/Asia/top/-3"
+curl.exe -i "http://localhost:7070/countries/region/Eastern%20Asia/top/abc"
+```
+---
 ## License
 
 This project is released under the **MIT License**. See [LICENSE](LICENSE).
