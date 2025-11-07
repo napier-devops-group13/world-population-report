@@ -19,9 +19,7 @@ env:
   MAVEN_OPTS: -Xmx1g -XX:+TieredCompilation -XX:TieredStopAtLevel=1
 
 jobs:
-  # ---------------------------------------------------------------------------
-  # 1) Build & test on JDK 24 with a real MySQL service (unit + ITs)
-  # ---------------------------------------------------------------------------
+  # 1) Build & Tests on JDK 24 with real MySQL (unit + ITs)
   build-java24:
     name: Build + Tests (JDK 24, shaded JAR, MySQL ITs)
     runs-on: ubuntu-latest
@@ -86,8 +84,7 @@ jobs:
           DB_PORT: ${{ job.services.mysql.ports['3306'] }}
           DB_NAME: world
           DB_USER: root
-          DB_PASS: root
-          DB_PASSWORD: root
+          DB_PASS: root        # << match Db.java
         run: mvn -B -ntp -DskipITs=false clean verify
 
       - name: Upload shaded JAR
@@ -109,9 +106,7 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
-  # ---------------------------------------------------------------------------
-  # 2) Coverage report on JDK 21 (provisions MySQL so SanityTest can run)
-  # ---------------------------------------------------------------------------
+  # 2) Coverage on JDK 21 (spin up MySQL so DB-using tests pass)
   coverage-java21:
     name: Coverage (JDK 21, JaCoCo)
     runs-on: ubuntu-latest
@@ -171,15 +166,14 @@ jobs:
             echo "No seed file found (db/init/01-world.sql or db/01-world.sql)"; exit 1
           fi
 
-      - name: Run tests + JaCoCo report
+      - name: Run tests + JaCoCo report (DB env provided)
         env:
           DB_HOST: 127.0.0.1
           DB_PORT: ${{ job.services.mysql.ports['3306'] }}
           DB_NAME: world
           DB_USER: root
-          DB_PASS: root
-          DB_PASSWORD: root
-        run: mvn -B -ntp -Denforcer.skip=true test jacoco:report
+          DB_PASS: root        # << match Db.java
+        run: mvn -B -ntp -Denforcer.skip=true -DskipITs=false test jacoco:report
 
       - name: Upload JaCoCo HTML report
         uses: actions/upload-artifact@v4
@@ -198,9 +192,7 @@ jobs:
           fail_ci_if_error: true
           verbose: false
 
-  # ---------------------------------------------------------------------------
-  # 3) Build Docker image and smoke-test against MySQL using real endpoints
-  # ---------------------------------------------------------------------------
+  # 3) Docker image build + smoke test
   docker-smoke:
     name: Docker build + smoke
     runs-on: ubuntu-latest
@@ -262,17 +254,14 @@ jobs:
             -e DB_NAME=world \
             -e DB_USER=root \
             -e DB_PASS=root \
-            -e DB_PASSWORD=root \
             world-population-report:${{ github.sha }}
 
-          # wait for app to serve /countries/world (200) on port 7070
           for i in {1..60}; do
             code=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:7070/countries/world" || true)
             if [ "$code" = "200" ]; then break; fi
             sleep 2
           done
 
-          # tiny smoke – expect HTTP 200 from a real endpoint
           curl -sS -o /dev/null -w "%{http_code}\n" "http://localhost:7070/countries/world" | grep -E "^200$"
 
       - name: Stop container
