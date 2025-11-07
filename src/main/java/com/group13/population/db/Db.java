@@ -30,81 +30,71 @@ public final class Db {
 
     public Db() {
         this.host = getenvOrDefault("DB_HOST", "127.0.0.1");
-        this.port = parseIntOrDefault("DB_PORT", 43306); // matches docker-compose published port
+        this.port = parseIntOrDefault("DB_PORT", 43306);
         this.name = getenvOrDefault("DB_NAME", "world");
         this.user = getenvOrDefault("DB_USER", "app");
         this.pass = getenvOrDefault("DB_PASS", "app");
 
-        // Short connect/socket timeouts so retries are fast; keep SSL off for local dev.
         this.jdbcUrl = String.format(
-            "jdbc:mysql://%s:%d/%s"
-                + "?useSSL=false"
-                + "&allowPublicKeyRetrieval=true"
-                + "&useUnicode=true&characterEncoding=utf8"
-                + "&serverTimezone=UTC"
-                + "&connectTimeout=5000&socketTimeout=5000",
-            host, port, name);
+            "jdbc:mysql://%s:%d/%s?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC",
+            host, port, name
+        );
     }
 
-    /** Obtain a live JDBC connection. Blocks (with retries) until DB + data are ready. */
+    /** Returns a live JDBC connection. Blocks briefly until DB is ready. */
     public Connection connect() throws SQLException {
-        // Wait until MySQL accepts connections AND the world dataset is present
-        awaitReady(DEFAULT_MAX_WAIT_MS, 400L);
+        awaitReady(DEFAULT_MAX_WAIT_MS, 300L);
         return DriverManager.getConnection(jdbcUrl, user, pass);
     }
 
     /**
-     * Poll until the DB responds and the 'country' table has rows (dataset loaded),
-     * or the timeout elapses.
+     * Polls the DB until it responds to a simple "SELECT 1" or the timeout elapses.
      *
-     * @param maxWaitMs     total time to wait
-     * @param firstSleepMs  initial sleep between attempts; will back off up to 3s
+     * @param timeoutMillis total time to wait
+     * @param sleepMillis   delay between attempts
      */
-    public void awaitReady(final long maxWaitMs, final long firstSleepMs) {
-        final long deadline = System.currentTimeMillis() + Math.max(maxWaitMs, 30_000L);
-        long sleep = Math.max(firstSleepMs, 250L);
+    public void awaitReady(final long timeoutMillis, final long sleepMillis) {
+        final long deadline = System.currentTimeMillis() + timeoutMillis;
         SQLException last = null;
 
         while (System.currentTimeMillis() < deadline) {
-            try (Connection c = DriverManager.getConnection(jdbcUrl, user, pass)) {
-                // Ping and ensure seed data is available (avoids racing the import in CI)
-                try (PreparedStatement ping = c.prepareStatement("SELECT 1");
-                     ResultSet rsPing = ping.executeQuery()) {
-                    if (!rsPing.next()) throw new SQLException("Ping failed (no row).");
-                }
-                try (PreparedStatement ps = c.prepareStatement("SELECT COUNT(*) FROM country");
-                     ResultSet rs = ps.executeQuery()) {
-                    if (rs.next() && rs.getLong(1) > 0L) {
-                        return; // Ready: schema + data available
-                    }
+            try (Connection c = DriverManager.getConnection(jdbcUrl, user, pass);
+                 PreparedStatement ps = c.prepareStatement("SELECT 1");
+                 ResultSet rs = ps.executeQuery()) {
+
+                if (rs.next()) {
+                    return; // Ready
                 }
             } catch (SQLException e) {
-                last = e; // remember and retry
+                last = e; // keep last seen to report if we time out
             }
 
             try {
-                Thread.sleep(sleep);
+                Thread.sleep(sleepMillis);
             } catch (InterruptedException ie) {
                 Thread.currentThread().interrupt();
                 throw new IllegalStateException("Waiting for DB was interrupted.", ie);
             }
-            // Exponential backoff with cap
-            sleep = Math.min((long) (sleep * 1.5), 3000L);
         }
 
         throw new IllegalStateException("Database not ready after wait.", last);
     }
 
-    // ---------------- helpers ----------------
+    // ---------- helpers ----------
 
-    private static String getenvOrDefault(String key, String def) {
-        String v = System.getenv(key);
-        return (v == null || v.isBlank()) ? def : v.trim();
+    private static String getenvOrDefault(final String key, final String def) {
+        final String v = System.getenv(key);
+        if (v == null || v.isBlank()) {
+            return def;
+        }
+        return v.trim();
     }
 
-    private static int parseIntOrDefault(String key, int def) {
-        String v = System.getenv(key);
-        if (v == null || v.isBlank()) return def;
+    private static int parseIntOrDefault(final String key, final int def) {
+        final String v = System.getenv(key);
+        if (v == null || v.isBlank()) {
+            return def;
+        }
         try {
             return Integer.parseInt(v.trim());
         } catch (NumberFormatException ex) {
