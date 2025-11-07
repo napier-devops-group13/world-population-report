@@ -3,17 +3,15 @@ name: ci
 
 on:
   push:
-    branches: [ master, develop, "release/**" ]   # GitFlow: master, develop, release/*
+    branches: [ master, develop, "release/**" ]
   pull_request:
     branches: [ master, develop ]
   workflow_dispatch:
 
-# cancel older runs of the same ref
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
-# least-privilege by default; jobs can raise if needed
 permissions:
   contents: read
 
@@ -88,6 +86,7 @@ jobs:
           DB_PORT: ${{ job.services.mysql.ports['3306'] }}
           DB_NAME: world
           DB_USER: root
+          DB_PASS: root
           DB_PASSWORD: root
         run: mvn -B -ntp -DskipITs=false clean verify
 
@@ -111,19 +110,33 @@ jobs:
           retention-days: 7
 
   # ---------------------------------------------------------------------------
-  # 2) Coverage report on JDK 21 (stable), publish to Codecov via OIDC
+  # 2) Coverage report on JDK 21 (provisions MySQL so SanityTest can run)
   # ---------------------------------------------------------------------------
   coverage-java21:
     name: Coverage (JDK 21, JaCoCo)
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     permissions:
       contents: read
       checks: write
       statuses: write
       pull-requests: write
-      id-token: write   # OIDC for codecov-action v4 (no secret needed)
+      id-token: write
+
+    services:
+      mysql:
+        image: mysql:8.4
+        ports:
+          - 3306:3306
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: world
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
 
     steps:
       - name: Checkout
@@ -136,7 +149,36 @@ jobs:
           java-version: '21'
           cache: maven
 
+      - name: Install MySQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mysql-client
+
+      - name: Wait + seed MySQL
+        env:
+          MYSQL_PORT: ${{ job.services.mysql.ports['3306'] }}
+        shell: bash
+        run: |
+          for i in {1..60}; do
+            mysqladmin ping -h 127.0.0.1 -P "$MYSQL_PORT" -uroot -proot --silent && break
+            sleep 2
+          done
+          if [ -f db/init/01-world.sql ]; then
+            mysql -h 127.0.0.1 -P "$MYSQL_PORT" -uroot -proot world < db/init/01-world.sql
+          elif [ -f db/01-world.sql ]; then
+            mysql -h 127.0.0.1 -P "$MYSQL_PORT" -uroot -proot world < db/01-world.sql
+          else
+            echo "No seed file found (db/init/01-world.sql or db/01-world.sql)"; exit 1
+          fi
+
       - name: Run tests + JaCoCo report
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: ${{ job.services.mysql.ports['3306'] }}
+          DB_NAME: world
+          DB_USER: root
+          DB_PASS: root
+          DB_PASSWORD: root
         run: mvn -B -ntp -Denforcer.skip=true test jacoco:report
 
       - name: Upload JaCoCo HTML report
@@ -219,6 +261,7 @@ jobs:
             -e DB_PORT="$MYSQL_PORT" \
             -e DB_NAME=world \
             -e DB_USER=root \
+            -e DB_PASS=root \
             -e DB_PASSWORD=root \
             world-population-report:${{ github.sha }}
 
