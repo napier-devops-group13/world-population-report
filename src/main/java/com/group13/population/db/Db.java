@@ -7,16 +7,19 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 /**
- * Small helper for creating JDBC connections to the seeded "world" database.
- * <p>
- * Reads configuration from environment variables:
- * DB_HOST (default 127.0.0.1)
- * DB_PORT (default 43306 to match docker-compose published port)
- * DB_NAME (default world)
- * DB_USER (default app)
- * DB_PASS (default app)
+ * JDBC helper for the seeded "world" database.
+ *
+ * Environment variables (with sensible defaults for local compose):
+ *  - DB_HOST (default 127.0.0.1)
+ *  - DB_PORT (default 43306)  // your compose publishes 43306->3306
+ *  - DB_NAME (default world)
+ *  - DB_USER (default app)
+ *  - DB_PASS (default app)
  */
 public final class Db {
+
+    // Default max wait used by connect(); App.create() may override.
+    private static final long DEFAULT_MAX_WAIT_MS = 120_000L; // 2 minutes
 
     private final String host;
     private final int port;
@@ -27,57 +30,72 @@ public final class Db {
 
     public Db() {
         this.host = getenvOrDefault("DB_HOST", "127.0.0.1");
-        this.port = parseIntOrDefault("DB_PORT", 43306); // matches compose mapping
+        this.port = parseIntOrDefault("DB_PORT", 43306); // matches docker-compose published port
         this.name = getenvOrDefault("DB_NAME", "world");
         this.user = getenvOrDefault("DB_USER", "app");
         this.pass = getenvOrDefault("DB_PASS", "app");
 
-        // keep SSL off for local dev, allow public key retrieval, set UTC tz
+        // Short connect/socket timeouts so retries are fast; keep SSL off for local dev.
         this.jdbcUrl = String.format(
-            "jdbc:mysql://%s:%d/%s?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC",
+            "jdbc:mysql://%s:%d/%s"
+                + "?useSSL=false"
+                + "&allowPublicKeyRetrieval=true"
+                + "&useUnicode=true&characterEncoding=utf8"
+                + "&serverTimezone=UTC"
+                + "&connectTimeout=5000&socketTimeout=5000",
             host, port, name);
     }
 
-    /** Returns a live JDBC connection. Blocks briefly until DB is ready. */
+    /** Obtain a live JDBC connection. Blocks (with retries) until DB + data are ready. */
     public Connection connect() throws SQLException {
-        // Wait up to ~30 seconds for the database to become reachable
-        awaitReady(30_000L, 300L);
+        // Wait until MySQL accepts connections AND the world dataset is present
+        awaitReady(DEFAULT_MAX_WAIT_MS, 400L);
         return DriverManager.getConnection(jdbcUrl, user, pass);
     }
 
     /**
-     * Polls the DB until it responds to a simple "SELECT 1" or the timeout elapses.
+     * Poll until the DB responds and the 'country' table has rows (dataset loaded),
+     * or the timeout elapses.
      *
-     * @param timeoutMillis total time to wait
-     * @param sleepMillis   delay between attempts
+     * @param maxWaitMs     total time to wait
+     * @param firstSleepMs  initial sleep between attempts; will back off up to 3s
      */
-    public void awaitReady(final long timeoutMillis, final long sleepMillis) {
-        final long deadline = System.currentTimeMillis() + timeoutMillis;
+    public void awaitReady(final long maxWaitMs, final long firstSleepMs) {
+        final long deadline = System.currentTimeMillis() + Math.max(maxWaitMs, 30_000L);
+        long sleep = Math.max(firstSleepMs, 250L);
         SQLException last = null;
 
         while (System.currentTimeMillis() < deadline) {
-            try (Connection c = DriverManager.getConnection(jdbcUrl, user, pass);
-                 PreparedStatement ps = c.prepareStatement("SELECT 1");
-                 ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return; // Ready
+            try (Connection c = DriverManager.getConnection(jdbcUrl, user, pass)) {
+                // Ping and ensure seed data is available (avoids racing the import in CI)
+                try (PreparedStatement ping = c.prepareStatement("SELECT 1");
+                     ResultSet rsPing = ping.executeQuery()) {
+                    if (!rsPing.next()) throw new SQLException("Ping failed (no row).");
+                }
+                try (PreparedStatement ps = c.prepareStatement("SELECT COUNT(*) FROM country");
+                     ResultSet rs = ps.executeQuery()) {
+                    if (rs.next() && rs.getLong(1) > 0L) {
+                        return; // Ready: schema + data available
+                    }
                 }
             } catch (SQLException e) {
-                last = e;
-                // swallow and retry after a short sleep
+                last = e; // remember and retry
             }
+
             try {
-                Thread.sleep(sleepMillis);
+                Thread.sleep(sleep);
             } catch (InterruptedException ie) {
                 Thread.currentThread().interrupt();
                 throw new IllegalStateException("Waiting for DB was interrupted.", ie);
             }
+            // Exponential backoff with cap
+            sleep = Math.min((long) (sleep * 1.5), 3000L);
         }
 
         throw new IllegalStateException("Database not ready after wait.", last);
     }
 
-    // ---------- helpers ----------
+    // ---------------- helpers ----------------
 
     private static String getenvOrDefault(String key, String def) {
         String v = System.getenv(key);
@@ -86,9 +104,7 @@ public final class Db {
 
     private static int parseIntOrDefault(String key, int def) {
         String v = System.getenv(key);
-        if (v == null || v.isBlank()) {
-            return def;
-        }
+        if (v == null || v.isBlank()) return def;
         try {
             return Integer.parseInt(v.trim());
         } catch (NumberFormatException ex) {
@@ -96,7 +112,6 @@ public final class Db {
         }
     }
 
-    // Expose for logging if you need it during debugging (not used by repo code)
     @Override
     public String toString() {
         return String.format("Db{host='%s', port=%d, name='%s', user='%s'}", host, port, name, user);
