@@ -3,36 +3,46 @@ package com.group13.population;
 import com.group13.population.db.Db;
 import com.group13.population.repo.WorldRepo;
 import io.javalin.Javalin;
-import io.javalin.config.JavalinConfig;
 import io.javalin.http.Context;
 import io.javalin.http.HttpStatus;
 import java.util.Map;
+import java.util.function.Function;
 
-/**
- * Application bootstrap: wires Javalin, repo, and routes for R01–R06 (Country reports).
- */
+/** App bootstrap + routes for Country reports (R01–R06). */
 public final class App {
 
-    private App() { }
+    private App() { } // empty ctor (space inside braces)
+
+
+    public static void main(final String[] args) {
+        int port = readPort();
+        Javalin app = create();
+        app.start(port);
+        System.out.println("Listening on http://localhost:" + port);
+    }
 
     /** Build a configured Javalin app with all routes registered. */
     public static Javalin create() {
-        // 1) Ensure DB is reachable before serving
+        // 1) Ensure DB is ready before serving
         Db db = new Db();
         db.awaitReady(30_000L, 500L);
 
         // 2) Repo
         WorldRepo repo = new WorldRepo(db);
 
-        // 3) App + common error mapping
-        Javalin app = Javalin.create((JavalinConfig cfg) -> { /* defaults ok */ });
+        // 3) App + common error mapping + routes
+        Javalin app = Javalin.create(cfg -> {
+            cfg.plugins.enableCors(cors -> cors.add(it -> it.anyHost()));
+            cfg.showJavalinBanner = false;
+            cfg.http.defaultContentType = "application/json";
+        });
 
-        // Return 400 as JSON for any thrown IllegalArgumentException
+        // Always JSON for 400 (bad input)
         app.exception(IllegalArgumentException.class, (e, ctx) -> {
             ctx.status(HttpStatus.BAD_REQUEST).json(Map.of("error", e.getMessage()));
         });
 
-        // Return 500 JSON for other unexpected errors
+        // Guard rail for unexpected errors
         app.exception(Exception.class, (e, ctx) -> {
             ctx.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .json(Map.of("error", "internal server error"));
@@ -42,25 +52,34 @@ public final class App {
         return app;
     }
 
-    /** Start server (used by shaded JAR). */
-    public static void main(String[] args) {
-        Javalin app = create();
-        app.start(7070);
-        System.out.println("Listening on http://localhost:7070");
+    /** Resolve port from APP_PORT (defaults to 7070). */
+    private static int readPort() {
+        String raw = System.getenv("APP_PORT");
+        if (raw == null || raw.isBlank()) {
+            return 7070;
+        }
+        try {
+            return Integer.parseInt(raw.trim());
+        } catch (NumberFormatException nfe) {
+            return 7070;
+        }
     }
 
-    /** Register REST routes (R01–R06). */
+    /** Register REST routes for R01–R06. */
     public static void registerRoutes(final Javalin app, final WorldRepo repo, final String prefix) {
         final String p = (prefix == null) ? "" : prefix;
 
-        // Helper: check ?sort=pop (case-insensitive)
-        java.util.function.Function<Context, Boolean> sortByPop = ctx -> {
+        // Simple health check
+        app.get(p + "/health", ctx -> ctx.result("ok"));
+
+        // Helper: ?sort=pop (case-insensitive)
+        Function<Context, Boolean> sortByPop = ctx -> {
             String s = ctx.queryParam("sort");
             return s != null && "pop".equalsIgnoreCase(s.trim());
         };
 
-        // Helper: parse positive integer for top-N endpoints
-        java.util.function.Function<Context, Integer> parsePositiveN = ctx -> {
+        // Helper: parse positive N (throws 400 with clear JSON)
+        Function<Context, Integer> parsePositiveN = ctx -> {
             String raw = ctx.pathParam("n");
             try {
                 int n = Integer.parseInt(raw);
@@ -108,14 +127,14 @@ public final class App {
             ctx.json(repo.topCountriesWorld(n));
         });
 
-        // R05: top-N countries in continent
+        // R05: top-N countries (continent)
         app.get(p + "/countries/continent/{continent}/top/{n}", ctx -> {
             String continent = ctx.pathParam("continent");
             int n = parsePositiveN.apply(ctx);
             ctx.json(repo.topCountriesByContinent(continent, n));
         });
 
-        // R06: top-N countries in region
+        // R06: top-N countries (region)
         app.get(p + "/countries/region/{region}/top/{n}", ctx -> {
             String region = ctx.pathParam("region");
             int n = parsePositiveN.apply(ctx);
