@@ -82,7 +82,7 @@ A clean, CI-friendly coursework scaffold that **fully implements the Country Rep
 
 
 ## CR1 Evidence (Screenshots)
-=======
+
 ## Quick Start
 
 > **Requirements**: JDK 21+, Maven 3.9+, Docker Desktop
