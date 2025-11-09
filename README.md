@@ -1,27 +1,27 @@
-<<<<<<< HEAD
+
 # World Population Report (SET09803 - Group 13)
 
 <p align="left">
   <!-- CI -->
-=======
+
 # World Population Report (SET09803 — Group 13)
 
 <p align="left">
   <!-- CI (GitFlow branches) -->
->>>>>>> master
+
   <a href="https://github.com/napier-devops-group13/world-population-report/actions/workflows/ci.yml?query=branch%3Amaster">
     <img alt="CI (master)" src="https://github.com/napier-devops-group13/world-population-report/actions/workflows/ci.yml/badge.svg?branch=master">
   </a>
   <a href="https://github.com/napier-devops-group13/world-population-report/actions/workflows/ci.yml?query=branch%3Adevelop">
     <img alt="CI (develop)" src="https://github.com/napier-devops-group13/world-population-report/actions/workflows/ci.yml/badge.svg?branch=develop">
   </a>
-<<<<<<< HEAD
+
   <!-- Coverage -->
   <a href="https://app.codecov.io/gh/napier-devops-group13/world-population-report">
     <img alt="Coverage" src="https://codecov.io/gh/napier-devops-group13/world-population-report/branch/master/graph/badge.svg">
   </a>
   <!-- Release + License + Tech hints -->
-=======
+
 
   <!-- Coverage (master) -->
   <a href="https://app.codecov.io/gh/napier-devops-group13/world-population-report">
@@ -29,7 +29,7 @@
   </a>
 
   <!-- Release + License + Tech -->
->>>>>>> master
+
   <a href="https://github.com/napier-devops-group13/world-population-report/releases">
     <img alt="Release" src="https://img.shields.io/github/v/release/napier-devops-group13/world-population-report">
   </a>
@@ -40,7 +40,7 @@
   <img alt="Compose" src="https://img.shields.io/badge/Docker-Compose-green">
 </p>
 
-<<<<<<< HEAD
+
 Minimal, CI-friendly scaffold for the coursework that delivers:
 
 - Java 21+ with Javalin 5 REST API
@@ -51,7 +51,7 @@ Minimal, CI-friendly scaffold for the coursework that delivers:
 - `docker compose` stack with MySQL 8.4 auto-seeded from `db/init/01-world.sql`
 - `/ready` and `/health` endpoints
 - PR template, CODEOWNERS, Code of Conduct, Issue templates
-=======
+
 A clean, CI-friendly coursework scaffold that **fully implements the Country Reports (R01–R06)** and aligns to **Code Review 1**, **Code Review 2**, and **Final Delivery** expectations.
 
 - Java 21+ with **Javalin 5** REST API (port **7070**)
@@ -61,31 +61,25 @@ A clean, CI-friendly coursework scaffold that **fully implements the Country Rep
 - Dockerfile (multi-stage) + `docker compose` for **MySQL 8.4** (seeded with `world` dataset)
 - GitFlow: **master**, **develop**, **release/**\* (CI triggers on all)
 - Issue templates, PR template, CODEOWNERS, Code of Conduct
->>>>>>> master
+
 
 ---
 
 ## Table of Contents
+
 - [Quick Start](#quick-start)
-<<<<<<< HEAD
-- [API Endpoints](#api-endpoints)
-- [Database & Seeding](#database--seeding)
-- [Project Structure](#project-structure)
-- [CI/CD & Quality](#cicd--quality)
-- [Assessment Evidence (CR1/CR2/Final)](#assessment-evidence-cr1cr2final)
-=======
 - [API Endpoints — Countries (R01–R06)](#api-endpoints--countries-r01r06)
 - [Database & Seeding](#database--seeding)
 - [Project Structure](#project-structure)
 - [Quality & CI/CD](#quality--cicd)
 - [Assessment Evidence (CR1 / CR2 / Final)](#assessment-evidence-cr1--cr2--final)
-- [Team & Contributions](#team--contributions)
->>>>>>> master
+- [Team & Contributions](#team--contributions-cr1)
 - [License](#license)
+
 
 ---
 
-<<<<<<< HEAD
+
 
 ## CR1 Evidence (Screenshots)
 =======
@@ -236,7 +230,7 @@ java -jar target/world-population-report.jar
 |  3 | Master branch contains assessable code (builds & runs)   | ✅  | `docs/evidence/29_master-build-ok.png`          |
 |  4 | Final release/tag created                                | ✅  | `docs/evidence/30_final-release.png`            |
 |  5 | Individual contribution spreadsheet attached (CR1 & CR2) | ✅  | `docs/evidence/31_contrib-spreadsheets.png`     |
->>>>>>> master
+
 
 
 ---
