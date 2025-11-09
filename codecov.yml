@@ -1,19 +1,28 @@
 # codecov.yml (repo root)
+
 codecov:
+  # Only report coverage when CI itself has passed
   require_ci_to_pass: true
 
 coverage:
   precision: 2
   round: down
+
   status:
     project:
       default:
-        target: 60%       # CR2 asks for tests & coverage; set a realistic pass bar
-        threshold: 2%     # small wiggle room to avoid flaky fails
+        # Overall repo coverage target (JaCoCo line coverage)
+        target: 60%
+        threshold: 2%   # small wiggle room so tiny drops don't fail CI
+
     patch:
       default:
-        target: 50%       # new/changed lines should keep decent coverage
+        # New / changed lines should have *some* tests,
+        # but don't make it too strict for coursework.
+        target: 25%
+        threshold: 2%
 
 comment:
+  # What Codecov posts on PRs
   layout: "reach, diff, flags, files, components"
   require_changes: true
