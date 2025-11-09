@@ -1,10 +1,6 @@
 
 # World Population Report (SET09803 - Group 13)
 
-<p align="left">
-  <!-- CI -->
-
-# World Population Report (SET09803 — Group 13)
 
 <p align="left">
   <!-- CI (GitFlow branches) -->
