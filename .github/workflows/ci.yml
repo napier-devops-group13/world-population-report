@@ -1,5 +1,5 @@
 ﻿# .github/workflows/ci.yml
-name: CI
+name: ci
 
 on:
   push:
@@ -8,12 +8,10 @@ on:
     branches: [ master, develop ]
   workflow_dispatch:
 
-# cancel older runs of the same ref to save minutes
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
-# default least-privilege; jobs can elevate if needed
 permissions:
   contents: read
 
@@ -21,7 +19,9 @@ env:
   MAVEN_OPTS: -Xmx1g -XX:+TieredCompilation -XX:TieredStopAtLevel=1
 
 jobs:
-  # --- Build & Test on JDK 24 with a real MySQL backing service (unit + ITs) ---
+  # ---------------------------------------------------------------------------
+  # 1) Build & test on JDK 24 with a real MySQL service (unit + ITs)
+  # ---------------------------------------------------------------------------
   build-java24:
     name: Build + Tests (JDK 24, shaded JAR, MySQL ITs)
     runs-on: ubuntu-latest
@@ -67,11 +67,18 @@ jobs:
           done
 
       - name: Seed database with world dataset
-        if: ${{ hashFiles('db/init/01-world.sql') != '' }}
         env:
           MYSQL_PORT: ${{ job.services.mysql.ports['3306'] }}
+        shell: bash
         run: |
-          mysql -h 127.0.0.1 -P "$MYSQL_PORT" -uroot -proot world < db/init/01-world.sql
+          set -e
+          if [ -f db/init/01-world.sql ]; then
+            mysql -h 127.0.0.1 -P "$MYSQL_PORT" -uroot -proot world < db/init/01-world.sql
+          elif [ -f db/01-world.sql ]; then
+            mysql -h 127.0.0.1 -P "$MYSQL_PORT" -uroot -proot world < db/01-world.sql
+          else
+            echo "No seed file found (db/init/01-world.sql or db/01-world.sql)"; exit 1
+          fi
 
       - name: Maven verify (unit + integration tests)
         env:
@@ -80,6 +87,7 @@ jobs:
           DB_NAME: world
           DB_USER: root
           DB_PASS: root
+          DB_PASSWORD: root
         run: mvn -B -ntp -DskipITs=false clean verify
 
       - name: Upload shaded JAR
@@ -101,19 +109,34 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
-  # --- Coverage job on LTS JDK (nice for examiners & stability) ---
+  # ---------------------------------------------------------------------------
+  # 2) Coverage report on JDK 21 (provisions MySQL so SanityTest can run)
+  # ---------------------------------------------------------------------------
   coverage-java21:
     name: Coverage (JDK 21, JaCoCo)
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
 
-    # Give this job just enough permission to publish a check/status
     permissions:
       contents: read
       checks: write
       statuses: write
       pull-requests: write
-      id-token: write     # required for OIDC (no secret token needed)
+      id-token: write
+
+    services:
+      mysql:
+        image: mysql:8.4
+        ports:
+          - 3306:3306
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: world
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
 
     steps:
       - name: Checkout
@@ -126,10 +149,39 @@ jobs:
           java-version: '21'
           cache: maven
 
+      - name: Install MySQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mysql-client
+
+      - name: Wait + seed MySQL
+        env:
+          MYSQL_PORT: ${{ job.services.mysql.ports['3306'] }}
+        shell: bash
+        run: |
+          for i in {1..60}; do
+            mysqladmin ping -h 127.0.0.1 -P "$MYSQL_PORT" -uroot -proot --silent && break
+            sleep 2
+          done
+          if [ -f db/init/01-world.sql ]; then
+            mysql -h 127.0.0.1 -P "$MYSQL_PORT" -uroot -proot world < db/init/01-world.sql
+          elif [ -f db/01-world.sql ]; then
+            mysql -h 127.0.0.1 -P "$MYSQL_PORT" -uroot -proot world < db/01-world.sql
+          else
+            echo "No seed file found (db/init/01-world.sql or db/01-world.sql)"; exit 1
+          fi
+
       - name: Run tests + JaCoCo report
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: ${{ job.services.mysql.ports['3306'] }}
+          DB_NAME: world
+          DB_USER: root
+          DB_PASS: root
+          DB_PASSWORD: root
         run: mvn -B -ntp -Denforcer.skip=true test jacoco:report
 
-      - name: Upload JaCoCo HTML report (artifact)
+      - name: Upload JaCoCo HTML report
         uses: actions/upload-artifact@v4
         with:
           name: jacoco-report
@@ -137,7 +189,7 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-      - name: Upload coverage to Codecov (OIDC, no secret)
+      - name: Upload coverage to Codecov (OIDC)
         uses: codecov/codecov-action@v4
         with:
           slug: napier-devops-group13/world-population-report
@@ -146,14 +198,83 @@ jobs:
           fail_ci_if_error: true
           verbose: false
 
-  # --- Docker build to validate Dockerfile (meets rubric: "build using JAR and Docker") ---
-  docker-build:
-    name: Docker build
+  # ---------------------------------------------------------------------------
+  # 3) Build Docker image and smoke-test against MySQL using real endpoints
+  # ---------------------------------------------------------------------------
+  docker-smoke:
+    name: Docker build + smoke
     runs-on: ubuntu-latest
     needs: [ build-java24 ]
-    timeout-minutes: 15
+    timeout-minutes: 20
+
+    services:
+      mysql:
+        image: mysql:8.4
+        ports:
+          - 3306:3306
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: world
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Install MySQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mysql-client
+
+      - name: Wait + seed MySQL
+        env:
+          MYSQL_PORT: ${{ job.services.mysql.ports['3306'] }}
+        shell: bash
+        run: |
+          for i in {1..60}; do
+            mysqladmin ping -h 127.0.0.1 -P "$MYSQL_PORT" -uroot -proot --silent && break
+            sleep 2
+          done
+          if [ -f db/init/01-world.sql ]; then
+            mysql -h 127.0.0.1 -P "$MYSQL_PORT" -uroot -proot world < db/init/01-world.sql
+          elif [ -f db/01-world.sql ]; then
+            mysql -h 127.0.0.1 -P "$MYSQL_PORT" -uroot -proot world < db/01-world.sql
+          else
+            echo "No seed file found (db/init/01-world.sql or db/01-world.sql)"; exit 1
+          fi
+
       - name: Build Docker image
         run: docker build -t world-population-report:${{ github.sha }} .
+
+      - name: Run container (connect to MySQL service)
+        env:
+          MYSQL_PORT: ${{ job.services.mysql.ports['3306'] }}
+        run: |
+          docker run -d --rm --name wpr \
+            --add-host=host.docker.internal:host-gateway \
+            -p 7070:7070 \
+            -e DB_HOST=host.docker.internal \
+            -e DB_PORT="$MYSQL_PORT" \
+            -e DB_NAME=world \
+            -e DB_USER=root \
+            -e DB_PASS=root \
+            -e DB_PASSWORD=root \
+            world-population-report:${{ github.sha }}
+
+          # wait for app to serve /countries/world (200) on port 7070
+          for i in {1..60}; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:7070/countries/world" || true)
+            if [ "$code" = "200" ]; then break; fi
+            sleep 2
+          done
+
+          # tiny smoke – expect HTTP 200 from a real endpoint
+          curl -sS -o /dev/null -w "%{http_code}\n" "http://localhost:7070/countries/world" | grep -E "^200$"
+
+      - name: Stop container
+        if: always()
+        run: docker rm -f wpr || true
