@@ -1,12 +1,10 @@
 package com.group13.population.repo;
 
 import com.group13.population.db.Db;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-
 import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -20,14 +18,14 @@ import java.util.Locale;
 public class WorldRepo {
 
     private static final String SELECT =
-        "SELECT c.Code AS Code, " +
-            "       c.Name AS Name, " +
-            "       c.Continent AS Continent, " +
-            "       c.Region AS Region, " +
-            "       c.Population AS Population, " +
-            "       cap.Name AS CapitalName " +
-            "FROM country c " +
-            "LEFT JOIN city cap ON cap.ID = c.Capital";
+        "SELECT c.Code AS Code, "
+            + "       c.Name AS Name, "
+            + "       c.Continent AS Continent, "
+            + "       c.Region AS Region, "
+            + "       c.Population AS Population, "
+            + "       cap.Name AS CapitalName "
+            + "FROM country c "
+            + "LEFT JOIN city cap ON cap.ID = c.Capital";
 
     private static final String ORDER_BY_NAME_ASC = " ORDER BY c.Name ASC";
     private static final String ORDER_BY_POP_DESC_NAME_ASC =
@@ -44,23 +42,20 @@ public class WorldRepo {
         this.db = db;
     }
 
-    /* --------- R01–R03 (default: Name ASC) + optional by-pop variants ---------- */
+    // R01–R03 (default Name ASC) with optional by-population variants
 
-    /** R01 default: World – all countries by Name ASC. */
     public List<CountryReport> countriesWorld() throws SQLException {
         final String sql = SELECT + ORDER_BY_NAME_ASC + ";";
         List<CountryReport> rows = query(sql);
-        rows.sort(NAME_ASC); // defensive to avoid DB collation surprises
+        rows.sort(NAME_ASC);
         return rows;
     }
 
-    /** R01 alt: World – all countries by Population DESC, Name ASC. */
     public List<CountryReport> countriesWorldByPopulation() throws SQLException {
         final String sql = SELECT + ORDER_BY_POP_DESC_NAME_ASC + ";";
         return query(sql);
     }
 
-    /** R02 default: Continent – all countries by Name ASC. */
     public List<CountryReport> countriesByContinent(final String continent) throws SQLException {
         final String sql = SELECT + " WHERE c.Continent = ?" + ORDER_BY_NAME_ASC + ";";
         List<CountryReport> rows = query(sql, continent);
@@ -68,13 +63,12 @@ public class WorldRepo {
         return rows;
     }
 
-    /** R02 alt: Continent – all countries by Population DESC, Name ASC. */
-    public List<CountryReport> countriesByContinentByPopulation(final String continent) throws SQLException {
+    public List<CountryReport> countriesByContinentByPopulation(final String continent)
+        throws SQLException {
         final String sql = SELECT + " WHERE c.Continent = ?" + ORDER_BY_POP_DESC_NAME_ASC + ";";
         return query(sql, continent);
     }
 
-    /** R03 default: Region – all countries by Name ASC. */
     public List<CountryReport> countriesByRegion(final String region) throws SQLException {
         final String sql = SELECT + " WHERE c.Region = ?" + ORDER_BY_NAME_ASC + ";";
         List<CountryReport> rows = query(sql, region);
@@ -82,33 +76,34 @@ public class WorldRepo {
         return rows;
     }
 
-    /** R03 alt: Region – all countries by Population DESC, Name ASC. */
-    public List<CountryReport> countriesByRegionByPopulation(final String region) throws SQLException {
+    public List<CountryReport> countriesByRegionByPopulation(final String region)
+        throws SQLException {
         final String sql = SELECT + " WHERE c.Region = ?" + ORDER_BY_POP_DESC_NAME_ASC + ";";
         return query(sql, region);
     }
 
-    /* ------------------- R04–R06: Top-N by Population (tie-break Name) ------------------- */
+    // R04–R06: Top-N by Population (tie-break Name)
 
-    /** R04: Top-N in the world by Population DESC, Name ASC. */
     public List<CountryReport> topCountriesWorld(final int n) throws SQLException {
         final String sql = SELECT + ORDER_BY_POP_DESC_NAME_ASC + " LIMIT ?;";
         return query(sql, n);
     }
 
-    /** R05: Top-N in a continent by Population DESC, Name ASC. */
-    public List<CountryReport> topCountriesByContinent(final String continent, final int n) throws SQLException {
-        final String sql = SELECT + " WHERE c.Continent = ?" + ORDER_BY_POP_DESC_NAME_ASC + " LIMIT ?;";
+    public List<CountryReport> topCountriesByContinent(final String continent, final int n)
+        throws SQLException {
+        final String sql =
+            SELECT + " WHERE c.Continent = ?" + ORDER_BY_POP_DESC_NAME_ASC + " LIMIT ?;";
         return query(sql, continent, n);
     }
 
-    /** R06: Top-N in a region by Population DESC, Name ASC. */
-    public List<CountryReport> topCountriesByRegion(final String region, final int n) throws SQLException {
-        final String sql = SELECT + " WHERE c.Region = ?" + ORDER_BY_POP_DESC_NAME_ASC + " LIMIT ?;";
+    public List<CountryReport> topCountriesByRegion(final String region, final int n)
+        throws SQLException {
+        final String sql =
+            SELECT + " WHERE c.Region = ?" + ORDER_BY_POP_DESC_NAME_ASC + " LIMIT ?;";
         return query(sql, region, n);
     }
 
-    /* -------------------------------- helpers -------------------------------- */
+    // -------------------------------- helpers --------------------------------
 
     private static CountryReport row(final ResultSet rs) throws SQLException {
         CountryReport r = new CountryReport();
@@ -123,13 +118,10 @@ public class WorldRepo {
 
     private List<CountryReport> query(final String sql, final Object... params) throws SQLException {
         List<CountryReport> out = new ArrayList<>();
-        try (Connection conn = db.connect();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
+        try (Connection conn = db.connect(); PreparedStatement ps = conn.prepareStatement(sql)) {
             for (int i = 0; i < params.length; i++) {
                 ps.setObject(i + 1, params[i]);
             }
-
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     out.add(row(rs));
