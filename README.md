@@ -158,12 +158,12 @@ DB_PASS=app
 
 | ID  | Name                                           | Met | Evidence / Screenshot |
 |-----|------------------------------------------------|:---:|------------------------|
-| R01 | All countries in the world                     | ✅  | [CSV](docs/evidence/R01_world.csv) · ![R01](docs/evidence/R01_world.png) |
-| R02 | All countries in a continent                   | ✅  | [CSV](docs/evidence/R02_continent_Asia.csv) · ![R02](docs/evidence/R02_continent_Asia.png) |
-| R03 | All countries in a region                      | ✅  | [CSV](docs/evidence/R03_region_EasternAsia.csv) · ![R03](docs/evidence/R03_region_EasternAsia.png) |
-| R04 | Top-N countries in the world                   | ✅  | [CSV](docs/evidence/R04_world_top5.csv) · ![R04](docs/evidence/R04_world_top5.png) |
-| R05 | Top-N countries in a continent                 | ✅  | [CSV](docs/evidence/R05_continent_Asia_top5.csv) · ![R05](docs/evidence/R05_continent_Asia_top5.png) |
-| R06 | Top-N countries in a region                    | ✅  | [CSV](docs/evidence/R06_region_EasternAsia_top5.csv) · ![R06](docs/evidence/R06_region_EasternAsia_top5.png) |
+| R01 | All countries in the world                     | ✅  | [R01_world.csv](docs/evidence/R01_world.csv) · ![R01](docs/evidence/R01_world.png) |
+| R02 | All countries in a continent                   | ✅  | [R02_continent_Asia.csv](docs/evidence/R02_continent_Asia.csv) · ![R02](docs/evidence/R02_continent_Asia.png) |
+| R03 | All countries in a region                      | ✅  | [R03_region_EasternAsia.csv](docs/evidence/R03_region_EasternAsia.csv) · ![R03](docs/evidence/R03_region_EasternAsia.png) |
+| R04 | Top-N countries in the world                   | ✅  | [R04_world_top5.csv](docs/evidence/R04_world_top5.csv) · ![R04](docs/evidence/R04_world_top5.png) |
+| R05 | Top-N countries in a continent                 | ✅  | [R05_continent_Asia_top5.csv](docs/evidence/R05_continent_Asia_top5.csv) · ![R05](docs/evidence/R05_continent_Asia_top5.png) |
+| R06 | Top-N countries in a region                    | ✅  | [R06_region_EasternAsia_top5.csv](docs/evidence/R06_region_EasternAsia_top5.csv) · ![R06](docs/evidence/R06_region_EasternAsia_top5.png) |
 | R07 | All cities in the world                        | ❌  | – |
 | R08 | All cities in a continent                      | ❌  | – |
 | R09 | All cities in a region                         | ❌  | – |
