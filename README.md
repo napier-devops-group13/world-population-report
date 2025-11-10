@@ -158,12 +158,12 @@ DB_PASS=app
 
 | ID  | Name                                           | Met      | Evidence / Screenshot |
 |-----|------------------------------------------------|:--------:|------------------------|
-| R01 | All countries in the world                     | ✅ Yes   | [R01_world.csv](docs/evidence/R01_world.csv) · ![R01 screenshot](docs/evidence/R01_world.png) |
-| R02 | All countries in a continent                   | ✅ Yes   | [R02_continent_Asia.csv](docs/evidence/R02_continent_Asia.csv) · ![R02 screenshot](docs/evidence/R02_continent_Asia.png) |
-| R03 | All countries in a region                      | ✅ Yes   | [R03_region_EasternAsia.csv](docs/evidence/R03_region_EasternAsia.csv) · ![R03 screenshot](docs/evidence/R03_region_EasternAsia.png) |
-| R04 | Top-N countries in the world                   | ✅ Yes   | [R04_world_top5.csv](docs/evidence/R04_world_top5.csv) · ![R04 screenshot](docs/evidence/R04_world_top5.png) |
-| R05 | Top-N countries in a continent                 | ✅ Yes   | [R05_continent_Asia_top5.csv](docs/evidence/R05_continent_Asia_top5.csv) · ![R05 screenshot](docs/evidence/R05_continent_Asia_top5.png) |
-| R06 | Top-N countries in a region                    | ✅ Yes   | [R06_region_EasternAsia_top5.csv](docs/evidence/R06_region_EasternAsia_top5.csv) · ![R06 screenshot](docs/evidence/R06_region_EasternAsia_top5.png) |
+| R01 | All countries in the world                     | ✅ Yes   | [R01_world.csv](docs/evidence/R01_world.csv) · <img src="docs/evidence/R01_world.png" alt="R01 screenshot" width="420" /> |
+| R02 | All countries in a continent                   | ✅ Yes   | [R02_continent_Asia.csv](docs/evidence/R02_continent_Asia.csv) · <img src="docs/evidence/R02_continent_Asia.png" alt="R02 screenshot" width="420" /> |
+| R03 | All countries in a region                      | ✅ Yes   | [R03_region_EasternAsia.csv](docs/evidence/R03_region_EasternAsia.csv) · <img src="docs/evidence/R03_region_EasternAsia.png" alt="R03 screenshot" width="420" /> |
+| R04 | Top-N countries in the world                   | ✅ Yes   | [R04_world_top5.csv](docs/evidence/R04_world_top5.csv) · <img src="docs/evidence/R04_world_top5.png" alt="R04 screenshot" width="420" /> |
+| R05 | Top-N countries in a continent                 | ✅ Yes   | [R05_continent_Asia_top5.csv](docs/evidence/R05_continent_Asia_top5.csv) · <img src="docs/evidence/R05_continent_Asia_top5.png" alt="R05 screenshot" width="420" /> |
+| R06 | Top-N countries in a region                    | ✅ Yes   | [R06_region_EasternAsia_top5.csv](docs/evidence/R06_region_EasternAsia_top5.csv) · <img src="docs/evidence/R06_region_EasternAsia_top5.png" alt="R06 screenshot" width="420" /> |
 | R07 | All cities in the world                        | ❌ No    | – |
 | R08 | All cities in a continent                      | ❌ No    | – |
 | R09 | All cities in a region                         | ❌ No    | – |
@@ -190,7 +190,6 @@ DB_PASS=app
 | R30 | Population of a district                       | ❌ No    | – |
 | R31 | Population of a city                           | ❌ No    | – |
 | R32 | Language statistics (Chinese, English, Hindi, Spanish, Arabic) | ❌ No | – |
-
 
 ---
 ## Assessment Evidence (CR1 / CR2 / Final)
