@@ -152,44 +152,44 @@ DB_PASS=app
 ---
 ## Functional Requirements (R01–R32)
 
-Summary of the coursework functional requirements and current implementation status.
- 
+## Summary of the coursework functional requirements and current implementation status
+
 > **Count:** 6 / 32 requirements implemented (all **Country** reports R01–R06) → **18.75%**.
 
-| ID  | Name                                           | Met | Evidence / Screenshot                                                                                              |
-|-----|------------------------------------------------|:---:|----------------------------------------------------------------------------------------------------------------------|
-| R01 | All countries in the world                     | ✅  | [CSV](docs/evidence/R01_world.csv) · ![R01](docs/evidence/R01_world.png)                                           |
-| R02 | All countries in a continent                   | ✅  | [CSV](docs/evidence/R02_continent_Asia.csv) · ![R02](docs/evidence/R02_continent_Asia.png)                         |
-| R03 | All countries in a region                      | ✅  | [CSV](docs/evidence/R03_region_EasternAsia.csv) · ![R03](docs/evidence/R03_region_EasternAsia.png)                 |
-| R04 | Top-N countries in the world                   | ✅  | [CSV](docs/evidence/R04_world_top5.csv) · ![R04](docs/evidence/R04_world_top5.png)                                 |
-| R05 | Top-N countries in a continent                 | ✅  | [CSV](docs/evidence/R05_continent_Asia_top5.csv) · ![R05](docs/evidence/R05_continent_Asia_top5.png)               |
-| R06 | Top-N countries in a region                    | ✅  | [CSV](docs/evidence/R06_region_EasternAsia_top5.csv) · ![R06](docs/evidence/R06_region_EasternAsia_top5.png)       |
-| R07 | All cities in the world                        | ❌  | –                                                                                                                   |
-| R08 | All cities in a continent                      | ❌  | –                                                                                                                   |
-| R09 | All cities in a region                         | ❌  | –                                                                                                                   |
-| R10 | All cities in a country                        | ❌  | –                                                                                                                   |
-| R11 | All cities in a district                       | ❌  | –                                                                                                                   |
-| R12 | Top-N cities in the world                      | ❌  | –                                                                                                                   |
-| R13 | Top-N cities in a continent                    | ❌  | –                                                                                                                   |
-| R14 | Top-N cities in a region                       | ❌  | –                                                                                                                   |
-| R15 | Top-N cities in a country                      | ❌  | –                                                                                                                   |
-| R16 | Top-N cities in a district                     | ❌  | –                                                                                                                   |
-| R17 | All capital cities in the world                | ❌  | –                                                                                                                   |
-| R18 | All capital cities in a continent              | ❌  | –                                                                                                                   |
-| R19 | All capital cities in a region                 | ❌  | –                                                                                                                   |
-| R20 | Top-N capital cities in the world              | ❌  | –                                                                                                                   |
-| R21 | Top-N capital cities in a continent            | ❌  | –                                                                                                                   |
-| R22 | Top-N capital cities in a region               | ❌  | –                                                                                                                   |
-| R23 | Population in & out of cities per continent    | ❌  | –                                                                                                                   |
-| R24 | Population in & out of cities per region       | ❌  | –                                                                                                                   |
-| R25 | Population in & out of cities per country      | ❌  | –                                                                                                                   |
-| R26 | Population of the world                        | ❌  | –                                                                                                                   |
-| R27 | Population of a continent                      | ❌  | –                                                                                                                   |
-| R28 | Population of a region                         | ❌  | –                                                                                                                   |
-| R29 | Population of a country                        | ❌  | –                                                                                                                   |
-| R30 | Population of a district                       | ❌  | –                                                                                                                   |
-| R31 | Population of a city                           | ❌  | –                                                                                                                   |
-| R32 | Language statistics (Chinese, English, Hindi, Spanish, Arabic) | ❌  | –                                                              |
+| ID  | Name                                           | Met | Evidence / Screenshot |
+|-----|------------------------------------------------|:---:|------------------------|
+| R01 | All countries in the world                     | ✅  | [CSV](docs/evidence/R01_world.csv) · ![R01](docs/evidence/R01_world.png) |
+| R02 | All countries in a continent                   | ✅  | [CSV](docs/evidence/R02_continent_Asia.csv) · ![R02](docs/evidence/R02_continent_Asia.png) |
+| R03 | All countries in a region                      | ✅  | [CSV](docs/evidence/R03_region_EasternAsia.csv) · ![R03](docs/evidence/R03_region_EasternAsia.png) |
+| R04 | Top-N countries in the world                   | ✅  | [CSV](docs/evidence/R04_world_top5.csv) · ![R04](docs/evidence/R04_world_top5.png) |
+| R05 | Top-N countries in a continent                 | ✅  | [CSV](docs/evidence/R05_continent_Asia_top5.csv) · ![R05](docs/evidence/R05_continent_Asia_top5.png) |
+| R06 | Top-N countries in a region                    | ✅  | [CSV](docs/evidence/R06_region_EasternAsia_top5.csv) · ![R06](docs/evidence/R06_region_EasternAsia_top5.png) |
+| R07 | All cities in the world                        | ❌  | – |
+| R08 | All cities in a continent                      | ❌  | – |
+| R09 | All cities in a region                         | ❌  | – |
+| R10 | All cities in a country                        | ❌  | – |
+| R11 | All cities in a district                       | ❌  | – |
+| R12 | Top-N cities in the world                      | ❌  | – |
+| R13 | Top-N cities in a continent                    | ❌  | – |
+| R14 | Top-N cities in a region                       | ❌  | – |
+| R15 | Top-N cities in a country                      | ❌  | – |
+| R16 | Top-N cities in a district                     | ❌  | – |
+| R17 | All capital cities in the world                | ❌  | – |
+| R18 | All capital cities in a continent              | ❌  | – |
+| R19 | All capital cities in a region                 | ❌  | – |
+| R20 | Top-N capital cities in the world              | ❌  | – |
+| R21 | Top-N capital cities in a continent            | ❌  | – |
+| R22 | Top-N capital cities in a region               | ❌  | – |
+| R23 | Population in & out of cities per continent    | ❌  | – |
+| R24 | Population in & out of cities per region       | ❌  | – |
+| R25 | Population in & out of cities per country      | ❌  | – |
+| R26 | Population of the world                        | ❌  | – |
+| R27 | Population of a continent                      | ❌  | – |
+| R28 | Population of a region                         | ❌  | – |
+| R29 | Population of a country                        | ❌  | – |
+| R30 | Population of a district                       | ❌  | – |
+| R31 | Population of a city                           | ❌  | – |
+| R32 | Language statistics (Chinese, English, Hindi, Spanish, Arabic) | ❌ | – |
 
 
 ---
