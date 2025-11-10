@@ -5,14 +5,20 @@ import com.group13.population.repo.WorldRepo;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
 import io.javalin.http.HttpStatus;
+
 import java.util.Map;
 import java.util.function.Function;
 
-/** App bootstrap + routes for Country reports (R01–R06). */
+/**
+ * App bootstrap + routes for Country reports (R01–R06).
+ */
 public final class App {
 
-    private App() { } // empty ctor (space inside braces)
+    private static final int DEFAULT_PORT = 7070;
 
+    private App() {
+        // empty ctor (space inside braces)
+    }
 
     public static void main(final String[] args) {
         int port = readPort();
@@ -21,7 +27,9 @@ public final class App {
         System.out.println("Listening on http://localhost:" + port);
     }
 
-    /** Build a configured Javalin app with all routes registered. */
+    /**
+     * Build a configured Javalin app with all routes registered.
+     */
     public static Javalin create() {
         // 1) Ensure DB is ready before serving
         Db db = new Db();
@@ -38,35 +46,47 @@ public final class App {
         });
 
         // Always JSON for 400 (bad input)
-        app.exception(IllegalArgumentException.class, (e, ctx) -> {
-            ctx.status(HttpStatus.BAD_REQUEST).json(Map.of("error", e.getMessage()));
-        });
+        app.exception(IllegalArgumentException.class, (e, ctx) ->
+            ctx.status(HttpStatus.BAD_REQUEST)
+                .json(Map.of("error", e.getMessage()))
+        );
 
         // Guard rail for unexpected errors
-        app.exception(Exception.class, (e, ctx) -> {
+        app.exception(Exception.class, (e, ctx) ->
             ctx.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .json(Map.of("error", "internal server error"));
-        });
+                .json(Map.of("error", "internal server error"))
+        );
 
         registerRoutes(app, repo, "");
         return app;
     }
 
-    /** Resolve port from APP_PORT (defaults to 7070). */
+    /**
+     * Resolve port from APP_PORT (defaults to 7070).
+     */
     private static int readPort() {
         String raw = System.getenv("APP_PORT");
         if (raw == null || raw.isBlank()) {
-            return 7070;
+            return DEFAULT_PORT;
         }
         try {
             return Integer.parseInt(raw.trim());
         } catch (NumberFormatException nfe) {
-            return 7070;
+            return DEFAULT_PORT;
         }
     }
 
-    /** Register REST routes for R01–R06. */
-    public static void registerRoutes(final Javalin app, final WorldRepo repo, final String prefix) {
+    /**
+     * Register REST routes for R01–R06.
+     *
+     * @param app    Javalin app
+     * @param repo   Repository providing country data
+     * @param prefix Optional URL prefix ("" for normal app, "/api" for tests etc.)
+     */
+    public static void registerRoutes(final Javalin app,
+                                      final WorldRepo repo,
+                                      final String prefix) {
+
         final String p = (prefix == null) ? "" : prefix;
 
         // Simple health check

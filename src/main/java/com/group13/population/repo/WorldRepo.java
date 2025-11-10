@@ -1,6 +1,7 @@
 package com.group13.population.repo;
 
 import com.group13.population.db.Db;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -15,7 +16,7 @@ import java.util.Locale;
  * Data access for country reports (R01–R06).
  * Produces rows with: Code, Name, Continent, Region, Population, Capital.
  */
-public class WorldRepo {
+public final class WorldRepo {
 
     private static final String SELECT =
         "SELECT c.Code AS Code, "
@@ -31,7 +32,7 @@ public class WorldRepo {
     private static final String ORDER_BY_POP_DESC_NAME_ASC =
         " ORDER BY c.Population DESC, c.Name ASC";
 
-    // Locale-consistent “Name ASC” to match tests exactly.
+    // Locale-consistent "Name ASC" to match tests exactly.
     private static final Collator EN_COLLATOR = Collator.getInstance(Locale.ENGLISH);
     private static final Comparator<CountryReport> NAME_ASC =
         Comparator.comparing(CountryReport::getName, EN_COLLATOR);
@@ -42,20 +43,25 @@ public class WorldRepo {
         this.db = db;
     }
 
+    // -------------------------------------------------------------------------
     // R01–R03 (default Name ASC) with optional by-population variants
+    // -------------------------------------------------------------------------
 
+    /** R01 – all countries in the world (sorted by name ASC). */
     public List<CountryReport> countriesWorld() throws SQLException {
         final String sql = SELECT + ORDER_BY_NAME_ASC + ";";
         List<CountryReport> rows = query(sql);
-        rows.sort(NAME_ASC);
+        rows.sort(NAME_ASC); // enforce locale-stable ordering
         return rows;
     }
 
+    /** R01 variant – all countries in the world, sorted by population DESC then name ASC. */
     public List<CountryReport> countriesWorldByPopulation() throws SQLException {
         final String sql = SELECT + ORDER_BY_POP_DESC_NAME_ASC + ";";
         return query(sql);
     }
 
+    /** R02 – all countries in a continent (sorted by name ASC). */
     public List<CountryReport> countriesByContinent(final String continent) throws SQLException {
         final String sql = SELECT + " WHERE c.Continent = ?" + ORDER_BY_NAME_ASC + ";";
         List<CountryReport> rows = query(sql, continent);
@@ -63,12 +69,16 @@ public class WorldRepo {
         return rows;
     }
 
+    /** R02 variant – all countries in a continent, sorted by population DESC then name ASC. */
     public List<CountryReport> countriesByContinentByPopulation(final String continent)
         throws SQLException {
-        final String sql = SELECT + " WHERE c.Continent = ?" + ORDER_BY_POP_DESC_NAME_ASC + ";";
+
+        final String sql =
+            SELECT + " WHERE c.Continent = ?" + ORDER_BY_POP_DESC_NAME_ASC + ";";
         return query(sql, continent);
     }
 
+    /** R03 – all countries in a region (sorted by name ASC). */
     public List<CountryReport> countriesByRegion(final String region) throws SQLException {
         final String sql = SELECT + " WHERE c.Region = ?" + ORDER_BY_NAME_ASC + ";";
         List<CountryReport> rows = query(sql, region);
@@ -76,34 +86,46 @@ public class WorldRepo {
         return rows;
     }
 
+    /** R03 variant – all countries in a region, sorted by population DESC then name ASC. */
     public List<CountryReport> countriesByRegionByPopulation(final String region)
         throws SQLException {
-        final String sql = SELECT + " WHERE c.Region = ?" + ORDER_BY_POP_DESC_NAME_ASC + ";";
+
+        final String sql =
+            SELECT + " WHERE c.Region = ?" + ORDER_BY_POP_DESC_NAME_ASC + ";";
         return query(sql, region);
     }
 
-    // R04–R06: Top-N by Population (tie-break Name)
+    // -------------------------------------------------------------------------
+    // R04–R06: Top-N by population (tie-break on Name)
+    // -------------------------------------------------------------------------
 
+    /** R04 – top-N countries in the world by population (tie-break name ASC). */
     public List<CountryReport> topCountriesWorld(final int n) throws SQLException {
         final String sql = SELECT + ORDER_BY_POP_DESC_NAME_ASC + " LIMIT ?;";
         return query(sql, n);
     }
 
+    /** R05 – top-N countries in a continent by population (tie-break name ASC). */
     public List<CountryReport> topCountriesByContinent(final String continent, final int n)
         throws SQLException {
+
         final String sql =
             SELECT + " WHERE c.Continent = ?" + ORDER_BY_POP_DESC_NAME_ASC + " LIMIT ?;";
         return query(sql, continent, n);
     }
 
+    /** R06 – top-N countries in a region by population (tie-break name ASC). */
     public List<CountryReport> topCountriesByRegion(final String region, final int n)
         throws SQLException {
+
         final String sql =
             SELECT + " WHERE c.Region = ?" + ORDER_BY_POP_DESC_NAME_ASC + " LIMIT ?;";
         return query(sql, region, n);
     }
 
-    // -------------------------------- helpers --------------------------------
+    // -------------------------------------------------------------------------
+    // Helpers
+    // -------------------------------------------------------------------------
 
     private static CountryReport row(final ResultSet rs) throws SQLException {
         CountryReport r = new CountryReport();
@@ -116,12 +138,17 @@ public class WorldRepo {
         return r;
     }
 
-    private List<CountryReport> query(final String sql, final Object... params) throws SQLException {
+    private List<CountryReport> query(final String sql, final Object... params)
+        throws SQLException {
+
         List<CountryReport> out = new ArrayList<>();
-        try (Connection conn = db.connect(); PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = db.connect();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
             for (int i = 0; i < params.length; i++) {
                 ps.setObject(i + 1, params[i]);
             }
+
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     out.add(row(rs));
