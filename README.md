@@ -18,7 +18,7 @@
   <a href="https://github.com/napier-devops-group13/world-population-report/releases/latest">
     <img
       alt="Latest release"
-      src="https://img.shields.io/github/v/release/napier-devops-group13/world-population-report?label=release&sort=semver&display_name=tag">
+      src="https://img.shields.io/github/v/release/napier-devops-group13/world-population-report?label=release&sort=semver">
   </a>
 
 
