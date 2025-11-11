@@ -268,10 +268,17 @@ DB_PASS=app
 ---
 ## Team
 
-This is a **Group 13** submission for SET09803.  
-The full team roster is listed in `TEAM.md`.
+This is a **Group 13** submission for **SET09803**.
 
-> Individual contribution percentages for CR1 and CR2 are recorded in the official spreadsheets submitted via Moodle (as required by the module handbook).
+The full team roster (names, student numbers and GitHub usernames) is listed in
+[`TEAM.md`](TEAM.md).
+
+> Individual contribution percentages for **Code Review 1 (CR1)**,  
+> **Code Review 2 (CR2)** and the **Final Delivery** are recorded in the
+> official contribution spreadsheets submitted via Moodle, as required by the
+> module handbook. GitHub commit and pull-request history provides additional
+> evidence of each member’s contribution.
+
 ---
 ## License
 
