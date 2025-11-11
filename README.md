@@ -10,23 +10,23 @@
   </a>
 
   <!-- Coverage (master) -->
-  <a href="https://app.codecov.io/gh/napier-devops-group13/world-population-report">
-    <img alt="Coverage" src="https://codecov.io/gh/napier-devops-group13/world-population-report/branch/master/graph/badge.svg">
+  <a href="https://app.codecov.io/gh/napier-devops-group13/world-population-report/branch/master">
+    <img alt="Coverage (master)" src="https://codecov.io/gh/napier-devops-group13/world-population-report/branch/master/graph/badge.svg">
   </a>
 
-  <!-- Release + License + Tech -->
+  <!-- Latest release -->
   <a href="https://github.com/napier-devops-group13/world-population-report/releases/latest">
-    <img
-      alt="Latest release"
-      src="https://badgen.net/github/release/napier-devops-group13/world-population-report?label=release" />
+    <img alt="Latest release" src="https://badgen.net/github/release/napier-devops-group13/world-population-report?label=release">
   </a>
 
+  <!-- License + tooling -->
   <a href="LICENSE">
     <img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg">
   </a>
-  <img alt="JDK" src="https://img.shields.io/badge/JDK-21%2B-blue">
-  <img alt="Compose" src="https://img.shields.io/badge/Docker-Compose-green">
+  <img alt="JDK 21+" src="https://img.shields.io/badge/JDK-21%2B-blue">
+  <img alt="Docker Compose" src="https://img.shields.io/badge/Docker-Compose-green">
 </p>
+
 
 REST API coursework for **SET09803** using the classic MySQL **`world`** dataset.  
 The project is built to be **CI-friendly**, **Dockerised**, and aligned with the **Code Review 1**, **Code Review 2**, and **Final Delivery** marking criteria.
