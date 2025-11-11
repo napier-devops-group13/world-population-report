@@ -45,6 +45,7 @@ Currently the project:
 
 - [Quick Start](#quick-start)
 - [API Endpoints — Countries (R01–R06)](#api-endpoints--countries-r01r06)
+- [Testing & Coverage](#testing-&-coverage)
 - [Report Evidence for R01–R06](#report-evidence-for-r01r06)
 - [Database & Seeding](#database--seeding)
 - [Project Structure](#project-structure)
@@ -60,7 +61,7 @@ Currently the project:
 
 > **Requirements:** JDK 21+, Maven 3.9+, Docker Desktop
 
-### Option A — Full stack via Docker Compose (recommended for demo)
+### Full stack via Docker Compose (recommended for demo)
 
 ```bash
 # from repo root
@@ -68,6 +69,33 @@ docker compose up -d
 # db  -> MySQL 8.4 with 'world' schema
 # app -> Javalin API on http://localhost:7070
 ```
+---
+
+## Testing & Coverage
+
+We separate fast unit tests from integration tests.
+
+### Unit tests
+
+- `AppRoutesTest` exercises all HTTP routes in `App` using an in-memory `FakeCountryRepo`.
+  - Introduced a `CountryRepository` interface for the country reports (R01–R06).
+  - `WorldRepo` implements this interface in production.
+  - The test verifies:
+    - `/health` returns `200 OK`.
+    - All `/countries/...` and `/countries/.../top/{n}` routes return JSON.
+    - `?sort=pop` selects the population-sorted variants.
+    - Invalid `n` (`0` or non-numeric) returns HTTP `400` with a clear JSON error.
+    - Unexpected failures in the repository are mapped to HTTP `500` (`internal server error`).
+
+Other unit tests:
+- `ComparatorsTest` – checks sorting behaviour for country reports.
+
+These tests run with:
+
+```bash
+mvn test
+```
+
 ---
 ## API Endpoints — Countries (R01–R06)
 
