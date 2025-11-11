@@ -1,22 +1,104 @@
-name: Bug report
-description: Report a reproducible problem
+name: "Bug report"
+description: "Report a reproducible problem"
 title: "[Bug]: "
 labels: ["bug"]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug.
+        Please fill in all required sections so we can reproduce and fix it.
+
+  - type: input
+    id: summary
+    attributes:
+      label: Short summary
+      description: One sentence that describes the problem.
+      placeholder: "Example: R01 world country report not ordered by population DESC"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected area / requirement
+      description: Which part of the project does this bug affect?
+      options:
+        - "R01–R06 – Country reports"
+        - "R07–R16 – City reports"
+        - "R17–R22 – Capital city reports"
+        - "R23–R25 – Population in / out of cities"
+        - "R26–R31 – Population lookup (world/continents/regions/etc.)"
+        - "R32 – Languages"
+        - "Database / seeding"
+        - "CI / GitHub Actions"
+        - "Docker / deployment"
+        - "Documentation / README"
+        - "Other"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      description: How serious is this bug?
+      options:
+        - "Critical – feature unusable / CI broken"
+        - "Major – important but workaround exists"
+        - "Minor – cosmetic / small impact"
+    validations:
+      required: true
+
   - type: textarea
     id: steps
     attributes:
       label: Steps to reproduce
-      placeholder: "1) … 2) …"
+      description: Exact steps so we can see the same problem.
+      placeholder: |
+        1) Checkout branch: develop
+        2) Run: docker-compose up --build
+        3) Open: GET /reports/countries/world in browser or Postman
+        4) Observe the response…
     validations:
       required: true
+
   - type: textarea
     id: expected
     attributes:
       label: Expected behavior
+      description: What should have happened according to the requirements (R01–R06 etc.)?
+      placeholder: "Example: Countries should be ordered by population DESC, then by name ASC."
     validations:
       required: true
+
   - type: textarea
     id: actual
     attributes:
       label: Actual behavior / logs
+      description: What actually happened? Include error messages or stack traces.
+      placeholder: |
+        Example:
+        - Response is ordered alphabetically by name.
+        - CI log snippet or stack trace here.
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Where did you see this bug?
+      placeholder: |
+        - Branch: develop
+        - Commit: abc1234
+        - Run mode: local IntelliJ / docker-compose / GitHub Actions CI
+        - DB host/port: db:3306 (mapped to 43306)
+        - Java version: Temurin 24, Maven 3.9.x
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots / additional context
+      description: Drag & drop screenshots or add any extra notes.
+      placeholder: "Attach screenshots of Postman, browser, CI logs, etc."
