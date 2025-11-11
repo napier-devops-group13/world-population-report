@@ -281,7 +281,6 @@ The full team roster (names, student numbers and GitHub usernames) is listed in
 > evidence of each member’s contribution.
 
 
-
 ---
 ## License
 
