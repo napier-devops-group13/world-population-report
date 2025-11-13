@@ -222,7 +222,7 @@ jobs:
         run: |
           # start container (app listens on 7070 by default)
           docker run -d --rm --name wpr \
-            -p 7070:7070 \
+            -p 7080:7070 \
             world-population-report:${{ github.sha }}
 
           # wait until /health returns 200
