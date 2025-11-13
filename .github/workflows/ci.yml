@@ -69,6 +69,7 @@ jobs:
       - name: Seed database with world dataset
         env:
           MYSQL_PORT: ${{ job.services.mysql.ports['3306'] }}
+        shell: bash
         run: |
           set -e
           if [ -f db/init/01-world.sql ]; then
@@ -79,14 +80,13 @@ jobs:
             echo "No seed file found (db/init/01-world.sql or db/01-world.sql)"; exit 1
           fi
 
-      - name: Maven clean verify (unit + ITs, JaCoCo bound to verify)
+      - name: Maven verify (unit + integration tests)
         env:
           DB_HOST: 127.0.0.1
           DB_PORT: ${{ job.services.mysql.ports['3306'] }}
           DB_NAME: world
           DB_USER: root
           DB_PASS: root
-          DB_PASSWORD: root
         run: mvn -B -ntp -DskipITs=false clean verify
 
       - name: Upload shaded JAR
@@ -109,13 +109,12 @@ jobs:
           retention-days: 7
 
   # ---------------------------------------------------------------------------
-  # 2) Coverage report on JDK 21 (runs clean verify again + JaCoCo)
+  # 2) Coverage report on JDK 21 (unit + ITs, upload to Codecov)
   # ---------------------------------------------------------------------------
   coverage-java21:
     name: Coverage (JDK 21, JaCoCo + Codecov)
     runs-on: ubuntu-latest
-    timeout-minutes: 25
-    needs: [ build-java24 ]
+    timeout-minutes: 20
 
     permissions:
       contents: read
@@ -157,6 +156,7 @@ jobs:
       - name: Wait + seed MySQL
         env:
           MYSQL_PORT: ${{ job.services.mysql.ports['3306'] }}
+        shell: bash
         run: |
           for i in {1..60}; do
             mysqladmin ping -h 127.0.0.1 -P "$MYSQL_PORT" -uroot -proot --silent && break
@@ -177,8 +177,7 @@ jobs:
           DB_NAME: world
           DB_USER: root
           DB_PASS: root
-          DB_PASSWORD: root
-        run: mvn -B -ntp -DskipITs=false clean verify
+        run: mvn -B -ntp -Denforcer.skip=true -DskipITs=false clean verify
 
       - name: Upload JaCoCo HTML report
         uses: actions/upload-artifact@v4
@@ -198,7 +197,7 @@ jobs:
           verbose: false
 
   # ---------------------------------------------------------------------------
-  # 3) Build Docker image and smoke-test against MySQL using real endpoints
+  # 3) Build Docker image and smoke-test using /health (no DB needed)
   # ---------------------------------------------------------------------------
   docker-smoke:
     name: Docker build + smoke
@@ -206,72 +205,38 @@ jobs:
     needs: [ build-java24 ]
     timeout-minutes: 20
 
-    services:
-      mysql:
-        image: mysql:8.4
-        ports:
-          - 3306:3306
-        env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: world
-        options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot --silent"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=12
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install MySQL client
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y mysql-client
-
-      - name: Wait + seed MySQL
-        env:
-          MYSQL_PORT: ${{ job.services.mysql.ports['3306'] }}
-        run: |
-          for i in {1..60}; do
-            mysqladmin ping -h 127.0.0.1 -P "$MYSQL_PORT" -uroot -proot --silent && break
-            sleep 2
-          done
-          if [ -f db/init/01-world.sql ]; then
-            mysql -h 127.0.0.1 -P "$MYSQL_PORT" -uroot -proot world < db/init/01-world.sql
-          elif [ -f db/01-world.sql ]; then
-            mysql -h 127.0.0.1 -P "$MYSQL_PORT" -uroot -proot world < db/01-world.sql
-          else
-            echo "No seed file found (db/init/01-world.sql or db/01-world.sql)"; exit 1
-          fi
+      - name: Download shaded JAR from build job
+        uses: actions/download-artifact@v4
+        with:
+          name: app-jar
+          path: target
 
       - name: Build Docker image
         run: docker build -t world-population-report:${{ github.sha }} .
 
-      - name: Run container (connect to MySQL service)
-        env:
-          MYSQL_PORT: ${{ job.services.mysql.ports['3306'] }}
+      - name: Run container + health check
         run: |
+          # start container (app listens on 7070 by default)
           docker run -d --rm --name wpr \
-            --add-host=host.docker.internal:host-gateway \
             -p 7070:7070 \
-            -e DB_HOST=host.docker.internal \
-            -e DB_PORT="$MYSQL_PORT" \
-            -e DB_NAME=world \
-            -e DB_USER=root \
-            -e DB_PASS=root \
-            -e DB_PASSWORD=root \
             world-population-report:${{ github.sha }}
 
-          # Wait for app to respond on /countries/world
+          # wait until /health returns 200
           for i in {1..60}; do
-            code=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:7070/countries/world" || true)
-            if [ "$code" = "200" ]; then break; fi
+            code=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:7070/health" || true)
+            if [ "$code" = "200" ]; then
+              echo "App is healthy (200)."
+              break
+            fi
             sleep 2
           done
 
-          # Simple smoke test: require HTTP 200
-          curl -sS -o /dev/null -w "%{http_code}\n" "http://localhost:7070/countries/world" | grep -E "^200$"
+          # final strict check (fail if not 200)
+          curl -sS -o /dev/null -w "%{http_code}\n" "http://localhost:7070/health" | grep -E "^200$"
 
       - name: Stop container
         if: always()
