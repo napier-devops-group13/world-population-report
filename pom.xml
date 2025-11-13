@@ -40,8 +40,10 @@
     <jacoco.version>0.8.13</jacoco.version>
 
     <!-- Toggles -->
-    <jacoco.skip>false</jacoco.skip>   <!-- -Djacoco.skip=true to skip coverage -->
-    <skipITs>false</skipITs>           <!-- -DskipITs=true to skip integration tests -->
+    <!-- set -Djacoco.skip=true to skip coverage locally -->
+    <jacoco.skip>false</jacoco.skip>
+    <!-- set -DskipITs=true when you want ONLY unit tests -->
+    <skipITs>false</skipITs>
   </properties>
 
   <dependencies>
@@ -85,6 +87,7 @@
       <version>${javalin.version}</version>
       <scope>test</scope>
     </dependency>
+
     <dependency>
       <groupId>com.squareup.okhttp3</groupId>
       <artifactId>okhttp</artifactId>
@@ -94,17 +97,20 @@
   </dependencies>
 
   <build>
+    <!-- shaded JAR name used by Dockerfile -->
     <finalName>${project.artifactId}</finalName>
 
     <plugins>
-      <!-- Enforce tool versions -->
+      <!-- Enforce tool versions (Labs) -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-enforcer-plugin</artifactId>
         <version>${enforcer.plugin.version}</version>
         <executions>
           <execution>
-            <goals><goal>enforce</goal></goals>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
             <configuration>
               <rules>
                 <requireJavaVersion>
@@ -139,6 +145,7 @@
           <includes>
             <include>**/*Test.java</include>
           </includes>
+          <!-- ITs are handled by failsafe -->
           <excludes>
             <exclude>**/*IT.java</exclude>
           </excludes>
@@ -173,7 +180,7 @@
         </executions>
       </plugin>
 
-      <!-- JaCoCo coverage -->
+      <!-- JaCoCo coverage (unit + ITs) -->
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
@@ -182,23 +189,36 @@
           <skip>${jacoco.skip}</skip>
         </configuration>
         <executions>
+          <!-- attach JaCoCo agent before tests -->
           <execution>
             <id>jacoco-prepare-agent</id>
-            <goals><goal>prepare-agent</goal></goals>
+            <goals>
+              <goal>prepare-agent</goal>
+            </goals>
             <configuration>
               <includes>
+                <!-- instrument all production code under com.group13 -->
                 <include>com/group13/**</include>
               </includes>
               <excludes>
+                <!-- never count tests or IT classes -->
                 <exclude>**/*Test*</exclude>
                 <exclude>**/*IT*</exclude>
+
+                <!-- infra that is hard to test and not core business logic -->
+                <exclude>com/group13/population/db/**</exclude>
+                <exclude>com/group13/population/App.class</exclude>
               </excludes>
             </configuration>
           </execution>
+
+          <!-- generate HTML + XML report at verify -->
           <execution>
             <id>jacoco-report</id>
             <phase>verify</phase>
-            <goals><goal>report</goal></goals>
+            <goals>
+              <goal>report</goal>
+            </goals>
           </execution>
         </executions>
       </plugin>
@@ -226,7 +246,9 @@
           <execution>
             <id>checkstyle-validate</id>
             <phase>validate</phase>
-            <goals><goal>check</goal></goals>
+            <goals>
+              <goal>check</goal>
+            </goals>
           </execution>
         </executions>
       </plugin>
@@ -239,7 +261,9 @@
         <executions>
           <execution>
             <phase>verify</phase>
-            <goals><goal>spotbugs</goal></goals>
+            <goals>
+              <goal>spotbugs</goal>
+            </goals>
             <configuration>
               <effort>max</effort>
               <threshold>Low</threshold>
@@ -249,7 +273,7 @@
         </executions>
       </plugin>
 
-      <!-- Runnable shaded JAR -->
+      <!-- Runnable shaded JAR used in Docker image -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
@@ -257,11 +281,14 @@
         <executions>
           <execution>
             <phase>package</phase>
-            <goals><goal>shade</goal></goals>
+            <goals>
+              <goal>shade</goal>
+            </goals>
             <configuration>
               <createDependencyReducedPom>false</createDependencyReducedPom>
               <transformers>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                <transformer
+                  implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <mainClass>com.group13.population.App</mainClass>
                   <manifestEntries>
                     <Implementation-Title>${project.name}</Implementation-Title>

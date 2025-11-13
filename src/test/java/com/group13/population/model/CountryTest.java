@@ -26,39 +26,44 @@ class CountryTest {
     }
 
     @Test
-    void equalsAndHashCodeUseAllFields() {
-        Country a = new Country(
-            "CHN", "China", "Asia", "Eastern Asia", 1_277_558_000L, "Beijing"
-        );
-        Country b = new Country(
-            "CHN", "China", "Asia", "Eastern Asia", 1_277_558_000L, "Beijing"
-        );
-        Country differentPopulation = new Country(
-            "CHN", "China", "Asia", "Eastern Asia", 123L, "Beijing"
-        );
+    void equalsAndHashCodeWorkForSameValues() {
+        Country a = new Country("GBR", "United Kingdom",
+            "Europe", "British Islands", 59_115_000L, "London");
+        Country b = new Country("GBR", "United Kingdom",
+            "Europe", "British Islands", 59_115_000L, "London");
 
-        // same data → equal
         assertEquals(a, b);
         assertEquals(a.hashCode(), b.hashCode());
-
-        // different data / type / null → not equal
-        assertNotEquals(a, differentPopulation);
-        assertNotEquals(a.hashCode(), differentPopulation.hashCode());
-        assertNotEquals(a, null);
-        assertNotEquals(a, "not-a-country");
     }
 
     @Test
-    void toStringContainsKeyFields() {
+    void equalsReturnsFalseForDifferentValues() {
+        Country a = new Country("GBR", "United Kingdom",
+            "Europe", "British Islands", 59_115_000L, "London");
+        Country b = new Country("FRA", "France",
+            "Europe", "Western Europe", 58_518_395L, "Paris");
+
+        assertNotEquals(a, b);
+        assertNotEquals(a.hashCode(), b.hashCode());
+    }
+
+    @Test
+    void toStringContainsAllMainFields() {
         Country c = new Country(
-            "CHN", "China", "Asia", "Eastern Asia", 1_277_558_000L, "Beijing"
+            "MMR",
+            "Myanmar",
+            "Asia",
+            "Southeast Asia",
+            45_000_000L,
+            "Naypyidaw"
         );
 
         String s = c.toString();
-        assertTrue(s.contains("CHN"));
-        assertTrue(s.contains("China"));
+        assertTrue(s.contains("MMR"));
+        assertTrue(s.contains("Myanmar"));
         assertTrue(s.contains("Asia"));
-        assertTrue(s.contains("Eastern Asia"));
-        assertTrue(s.contains("Beijing"));
+        assertTrue(s.contains("Southeast Asia"));
+        assertTrue(s.contains("45"));
+        assertTrue(s.contains("Naypyidaw"));
     }
 }

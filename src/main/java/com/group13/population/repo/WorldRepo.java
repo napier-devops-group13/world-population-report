@@ -13,6 +13,13 @@ import java.util.List;
  */
 public class WorldRepo {
 
+    /**
+     * Optional shared connection injected from App / tests.
+     * If this is non-null, the repo will use it and will NOT close it.
+     * The caller (App / tests) is responsible for closing it.
+     */
+    private final Connection sharedConn;
+
     // Base projection used by all queries
     private static final String SELECT =
         "SELECT c.Code AS Code, "
@@ -28,11 +35,25 @@ public class WorldRepo {
     private static final String ORDER_BY_POP_DESC_NAME_ASC =
         " ORDER BY c.Population DESC, c.Name ASC";
 
+    /* ---------- Constructors ---------- */
+
+    /** Default constructor – used by the running app. */
+    public WorldRepo() {
+        this.sharedConn = null;
+    }
+
+    /**
+     * Constructor used by integration tests (and optionally App).
+     * The repository will use this connection but never close it.
+     */
+    public WorldRepo(Connection sharedConn) {
+        this.sharedConn = sharedConn;
+    }
+
     /* ---------- Public API used by CountryService ---------- */
 
     public List<CountryRow> allCountriesWorld() {
         final String sql = SELECT + ORDER_BY_POP_DESC_NAME_ASC;
-        // Empty binder must still satisfy Checkstyle's whitespace rules
         return run(sql, ps -> { });
     }
 
@@ -73,7 +94,21 @@ public class WorldRepo {
         });
     }
 
-    /* ---------- JDBC plumbing (self-contained, no external Db class) ---------- */
+    /* --- “N” aliases so tests can call topNCountries*() --- */
+
+    public List<CountryRow> topNCountriesWorld(int n) {
+        return topCountriesWorld(n);
+    }
+
+    public List<CountryRow> topNCountriesContinent(String continent, int n) {
+        return topCountriesContinent(continent, n);
+    }
+
+    public List<CountryRow> topNCountriesRegion(String region, int n) {
+        return topCountriesRegion(region, n);
+    }
+
+    /* ---------- JDBC plumbing ---------- */
 
     private interface Binder {
         void bind(PreparedStatement ps) throws Exception;
@@ -81,32 +116,54 @@ public class WorldRepo {
 
     private List<CountryRow> run(String sql, Binder binder) {
         List<CountryRow> out = new ArrayList<>();
-        try (Connection conn = open();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+        // If a shared connection was injected (tests / App), use it
+        if (sharedConn != null) {
+            try {
+                try (PreparedStatement ps = sharedConn.prepareStatement(sql)) {
+                    binder.bind(ps);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        while (rs.next()) {
+                            out.add(mapRow(rs));
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                // Keep it simple for coursework: swallow and return empty list
+            }
+            return out;
+        }
+
+        // Otherwise, open a new connection per call (used by default constructor)
+        try (Connection c = open();
+             PreparedStatement ps = c.prepareStatement(sql)) {
             binder.bind(ps);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    out.add(new CountryRow(
-                        rs.getString("Code"),
-                        rs.getString("Name"),
-                        rs.getString("Continent"),
-                        rs.getString("Region"),
-                        rs.getLong("Population"),
-                        rs.getString("CapitalName") // may be null
-                    ));
+                    out.add(mapRow(rs));
                 }
             }
         } catch (Exception e) {
-            // keep it simple for coursework: return empty on failure
-            // (alternatively wrap in RuntimeException)
+            // Same as above
         }
         return out;
+    }
+
+    private CountryRow mapRow(ResultSet rs) throws Exception {
+        return new CountryRow(
+            rs.getString("Code"),
+            rs.getString("Name"),
+            rs.getString("Continent"),
+            rs.getString("Region"),
+            rs.getLong("Population"),
+            rs.getString("CapitalName") // may be null
+        );
     }
 
     private Connection open() throws Exception {
         // Pull from env with sensible fallbacks for IDE vs docker-compose
         String host = env("DB_HOST", "localhost");
-        int port = Integer.parseInt(env("DB_PORT", "43306")); // IDE default; compose app→db would be 3306
+        int port = Integer.parseInt(env("DB_PORT", "43306")); // IDE default; compose app→db usually 3306
         String user = env("DB_USER", "root");
         String pass = env("DB_PASS", "example");
         String name = env("DB_NAME", "world");
@@ -145,6 +202,32 @@ public class WorldRepo {
             this.region = region;
             this.population = population;
             this.capital = capital;
+        }
+
+        // ---- Getters used by tests (e.g. rows.get(0).population()) ----
+
+        public String code() {
+            return code;
+        }
+
+        public String name() {
+            return name;
+        }
+
+        public String continent() {
+            return continent;
+        }
+
+        public String region() {
+            return region;
+        }
+
+        public long population() {
+            return population;
+        }
+
+        public String capital() {
+            return capital;
         }
     }
 }
