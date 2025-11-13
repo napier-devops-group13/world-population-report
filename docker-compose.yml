@@ -8,7 +8,7 @@ services:
       MYSQL_PASSWORD: app
       MYSQL_ROOT_PASSWORD: root
     ports:
-      - "43306:3306"
+      - "43306:3306" # host 43306 -> container 3306
     volumes:
       - world_db:/var/lib/mysql
       - ./db/init/01-world.sql:/docker-entrypoint-initdb.d/01-world.sql:ro
