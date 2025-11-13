@@ -8,12 +8,10 @@ on:
     branches: [ master, develop ]
   workflow_dispatch:
 
-# Only one CI run per ref at a time
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
-# Least-privilege default
 permissions:
   contents: read
 
@@ -22,8 +20,7 @@ env:
 
 jobs:
   # ---------------------------------------------------------------------------
-  # 1) Build & tests (unit + ITs) on JDK 24 with real MySQL
-  #    - Produces shaded runnable JAR for evidence / releases
+  # 1) Build & test on JDK 24 with a real MySQL service (unit + ITs)
   # ---------------------------------------------------------------------------
   build-java24:
     name: Build + Tests (JDK 24, shaded JAR, MySQL ITs)
@@ -72,7 +69,6 @@ jobs:
       - name: Seed database with world dataset
         env:
           MYSQL_PORT: ${{ job.services.mysql.ports['3306'] }}
-        shell: bash
         run: |
           set -e
           if [ -f db/init/01-world.sql ]; then
@@ -83,7 +79,7 @@ jobs:
             echo "No seed file found (db/init/01-world.sql or db/01-world.sql)"; exit 1
           fi
 
-      - name: Maven verify (unit + integration tests)
+      - name: Maven clean verify (unit + ITs, JaCoCo bound to verify)
         env:
           DB_HOST: 127.0.0.1
           DB_PORT: ${{ job.services.mysql.ports['3306'] }}
@@ -113,15 +109,13 @@ jobs:
           retention-days: 7
 
   # ---------------------------------------------------------------------------
-  # 2) Coverage job on JDK 21
-  #    - Runs unit + integration tests again
-  #    - Lets jacoco-maven-plugin (in pom.xml) generate jacoco.xml at verify
-  #    - Uploads that full report to Codecov
+  # 2) Coverage report on JDK 21 (runs clean verify again + JaCoCo)
   # ---------------------------------------------------------------------------
   coverage-java21:
     name: Coverage (JDK 21, JaCoCo + Codecov)
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
+    needs: [ build-java24 ]
 
     permissions:
       contents: read
@@ -163,7 +157,6 @@ jobs:
       - name: Wait + seed MySQL
         env:
           MYSQL_PORT: ${{ job.services.mysql.ports['3306'] }}
-        shell: bash
         run: |
           for i in {1..60}; do
             mysqladmin ping -h 127.0.0.1 -P "$MYSQL_PORT" -uroot -proot --silent && break
@@ -177,7 +170,7 @@ jobs:
             echo "No seed file found (db/init/01-world.sql or db/01-world.sql)"; exit 1
           fi
 
-      - name: Run tests (unit + ITs) and generate JaCoCo report
+      - name: Run tests + JaCoCo (unit + ITs)
         env:
           DB_HOST: 127.0.0.1
           DB_PORT: ${{ job.services.mysql.ports['3306'] }}
@@ -185,12 +178,9 @@ jobs:
           DB_USER: root
           DB_PASS: root
           DB_PASSWORD: root
-        run: |
-          # -Denforcer.skip=true avoids toolchain complaints on JDK 21
-          # -DskipITs=false ensures Failsafe ITs run
-          mvn -B -ntp -Denforcer.skip=true -DskipITs=false clean verify
+        run: mvn -B -ntp -DskipITs=false clean verify
 
-      - name: Upload JaCoCo HTML report (artifact)
+      - name: Upload JaCoCo HTML report
         uses: actions/upload-artifact@v4
         with:
           name: jacoco-report
@@ -208,7 +198,7 @@ jobs:
           verbose: false
 
   # ---------------------------------------------------------------------------
-  # 3) Docker build + smoke test against MySQL using a real endpoint
+  # 3) Build Docker image and smoke-test against MySQL using real endpoints
   # ---------------------------------------------------------------------------
   docker-smoke:
     name: Docker build + smoke
@@ -242,7 +232,6 @@ jobs:
       - name: Wait + seed MySQL
         env:
           MYSQL_PORT: ${{ job.services.mysql.ports['3306'] }}
-        shell: bash
         run: |
           for i in {1..60}; do
             mysqladmin ping -h 127.0.0.1 -P "$MYSQL_PORT" -uroot -proot --silent && break
@@ -274,14 +263,14 @@ jobs:
             -e DB_PASSWORD=root \
             world-population-report:${{ github.sha }}
 
-          # wait for app to serve /countries/world (200) on port 7070
+          # Wait for app to respond on /countries/world
           for i in {1..60}; do
             code=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:7070/countries/world" || true)
             if [ "$code" = "200" ]; then break; fi
             sleep 2
           done
 
-          # tiny smoke – expect HTTP 200 from a real endpoint
+          # Simple smoke test: require HTTP 200
           curl -sS -o /dev/null -w "%{http_code}\n" "http://localhost:7070/countries/world" | grep -E "^200$"
 
       - name: Stop container
