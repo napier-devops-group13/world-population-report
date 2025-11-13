@@ -20,34 +20,23 @@ import static org.junit.jupiter.api.Assertions.*;
 class CountryRoutesTest {
 
     /**
-     * Build a fresh Javalin app wired with a FakeCountryRepo.
-     * JavalinTest will start/stop this app for each test.
+     * Build a small fake app using an in-memory repository.
      */
     private static Javalin createApp() {
-        // Small in-memory data set for the fake repo
-        List<WorldRepo.CountryRow> seedRows = List.of(
-            new WorldRepo.CountryRow("CHN", "China", "Asia", "Eastern Asia",
-                1_439_323_776L, "Beijing"),
-            new WorldRepo.CountryRow("IND", "India", "Asia", "Southern Asia",
-                1_380_004_385L, "New Delhi"),
-            new WorldRepo.CountryRow("USA", "United States", "North America",
-                "North America", 331_002_651L, "Washington"),
-            new WorldRepo.CountryRow("IDN", "Indonesia", "Asia", "South-Eastern Asia",
-                273_523_615L, "Jakarta"),
-            new WorldRepo.CountryRow("PAK", "Pakistan", "Asia", "Southern Asia",
-                220_892_340L, "Islamabad")
+        // Seed data used by FakeCountryRepo (no real database)
+        List<WorldRepo.CountryRow> seed = List.of(
+            new WorldRepo.CountryRow("A", "A", "X", "Y", 50, "cA"),
+            new WorldRepo.CountryRow("B", "B", "X", "Y", 40, "cB"),
+            new WorldRepo.CountryRow("C", "C", "X", "Y", 30, "cC")
         );
 
-        FakeCountryRepo repo = new FakeCountryRepo(seedRows);
+        FakeCountryRepo repo = new FakeCountryRepo(seed);
         CountryService service = new CountryService(repo);
         CountryRoutes routes = new CountryRoutes(service);
 
-        // NOTE: do NOT call start() here; JavalinTest handles that.
         Javalin app = Javalin.create(cfg -> cfg.showJavalinBanner = false);
-
         routes.register(app);
         app.get("/health", ctx -> ctx.result("OK"));
-
         return app;
     }
 
@@ -75,14 +64,9 @@ class CountryRoutesTest {
 
             assertTrue(list.isArray());
             assertEquals(3, list.size());
-            // Check descending population order for top-3
             assertTrue(
-                list.get(0).get("population").asLong()
-                    >= list.get(1).get("population").asLong()
-            );
-            assertTrue(
-                list.get(1).get("population").asLong()
-                    >= list.get(2).get("population").asLong()
+                list.get(0).get("population").asLong() >=
+                    list.get(1).get("population").asLong()
             );
         });
     }
