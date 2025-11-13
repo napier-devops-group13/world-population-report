@@ -97,23 +97,33 @@ mvn test
 ```
 
 ---
-## API Endpoints — Countries (R01–R06)
+---
 
-**Base URL:** `http://localhost:7070`
+## API Endpoints – Countries (R01–R06)
 
-| ID  | Method | Endpoint                                       | Description                                      |
-|-----|--------|------------------------------------------------|--------------------------------------------------|
-| R01 | GET    | `/countries/world`                            | All countries in the world                       |
-| R02 | GET    | `/countries/continent/{continent}`            | All countries in a continent                     |
-| R03 | GET    | `/countries/region/{region}`                  | All countries in a region                        |
-| R04 | GET    | `/countries/world/top/{n}`                    | Top-N countries in the world by population       |
-| R05 | GET    | `/countries/continent/{continent}/top/{n}`    | Top-N countries in a continent by population     |
-| R06 | GET    | `/countries/region/{region}/top/{n}`          | Top-N countries in a region by population        |
+**Base URL:**
+
+- Local JVM (IntelliJ / `java -jar`): `http://localhost:7070/api`
+- Docker (`docker-compose up -d`): `http://localhost:7080/api`
+
+| ID  | Method | Endpoint                                   | Description                                                          |
+|-----|--------|---------------------------------------------|----------------------------------------------------------------------|
+| R01 | GET    | `/countries/world`                         | All countries in the world, ordered by **population DESC**.         |
+| R02 | GET    | `/countries/continent/{continent}`         | All countries in a continent, ordered by **population DESC**.       |
+| R03 | GET    | `/countries/region/{region}`               | All countries in a region, ordered by **population DESC**.          |
+| R04 | GET    | `/countries/world/top/{n}`                 | Top-N countries in the world by population (largest → smallest).    |
+| R05 | GET    | `/countries/continent/{continent}/top/{n}` | Top-N countries in a continent by population (largest → smallest).  |
+| R06 | GET    | `/countries/region/{region}/top/{n}`       | Top-N countries in a region by population (largest → smallest).     |
 
 **Error handling (examples):**
 
-- `n <= 0` or non-integer → **HTTP 400** JSON error (e.g. `{"error":"n must be > 0"}`).
-- Unknown continent/region → **400/404** depending on repository lookup.
+- `n <= 0` or non-integer → **HTTP 400** with JSON  
+  `{"error":"n must be > 0"}`
+
+- Unknown `continent` / `region` → **HTTP 200** with an empty JSON array `[]`
+  (no matching countries in the world database).
+
+
 ---
 ## Database & Seeding
 
@@ -180,7 +190,8 @@ DB_PASS=app
 ---
 ## Functional Requirements (R01–R32)
 
-## Summary of the coursework functional requirements and current implementation status
+### Summary of the coursework functional requirements and current implementation status
+
 
 > **Count:** 6 / 32 requirements implemented (all **Country** reports R01–R06) → **18.75%**.
 

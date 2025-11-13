@@ -26,6 +26,7 @@
     <slf4j.version>2.0.13</slf4j.version>
     <mysql.version>8.4.0</mysql.version>
     <jackson.version>2.17.2</jackson.version>
+    <okhttp.version>4.12.0</okhttp.version>
 
     <!-- Plugin versions -->
     <enforcer.plugin.version>3.5.0</enforcer.plugin.version>
@@ -44,6 +45,7 @@
   </properties>
 
   <dependencies>
+    <!-- App runtime -->
     <dependency>
       <groupId>io.javalin</groupId>
       <artifactId>javalin</artifactId>
@@ -68,7 +70,7 @@
       <version>${mysql.version}</version>
     </dependency>
 
-    <!-- JUnit 5 -->
+    <!-- Testing -->
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter</artifactId>
@@ -76,9 +78,20 @@
       <scope>test</scope>
     </dependency>
 
-
+    <!-- Javalin TestTools for route tests + OkHttp client -->
+    <dependency>
+      <groupId>io.javalin</groupId>
+      <artifactId>javalin-testtools</artifactId>
+      <version>${javalin.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.squareup.okhttp3</groupId>
+      <artifactId>okhttp</artifactId>
+      <version>${okhttp.version}</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
-
 
   <build>
     <finalName>${project.artifactId}</finalName>
@@ -142,7 +155,6 @@
           <includes>
             <include>**/*IT.java</include>
           </includes>
-          <!-- pass-through DB_* if set in environment -->
           <systemPropertyVariables>
             <DB_HOST>${env.DB_HOST}</DB_HOST>
             <DB_PORT>${env.DB_PORT}</DB_PORT>
@@ -191,7 +203,7 @@
         </executions>
       </plugin>
 
-      <!-- Checkstyle (uses files in config/checkstyle/) -->
+      <!-- Checkstyle (Lab 10) -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-checkstyle-plugin</artifactId>
