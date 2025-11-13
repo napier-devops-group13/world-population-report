@@ -227,7 +227,7 @@ jobs:
 
           # wait until /health returns 200
           for i in {1..60}; do
-            code=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:7070/health" || true)
+            code=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:7080/health" || true)
             if [ "$code" = "200" ]; then
               echo "App is healthy (200)."
               break
@@ -236,7 +236,7 @@ jobs:
           done
 
           # final strict check (fail if not 200)
-          curl -sS -o /dev/null -w "%{http_code}\n" "http://localhost:7070/health" | grep -E "^200$"
+          curl -sS -o /dev/null -w "%{http_code}\n" "http://localhost:7080/health" | grep -E "^200$"
 
       - name: Stop container
         if: always()
