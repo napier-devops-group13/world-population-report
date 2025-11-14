@@ -11,8 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 /**
  * Integration test for Db.connect against a real MySQL database.
  *
- * - On CI (CI=true) this test is skipped; Db.connect is already exercised
- *   indirectly by other ITPs (WorldRepoIT, AppSmokeTest, etc.).
+ * - On CI (CI=true) this test is skipped; Db.connect is exercised by other ITPs.
  * - Locally, if the DB container is not running or credentials are wrong
  *   the test is also skipped instead of failing the build.
  */
@@ -24,7 +23,6 @@ class DbIT {
             value = System.getenv("DB_HOST");
         }
         if (value == null || value.isBlank()) {
-            // Local default (docker-compose exposes world-db on localhost)
             value = "localhost";
         }
         return value;
@@ -36,19 +34,16 @@ class DbIT {
             raw = System.getenv("DB_PORT");
         }
         if (raw == null || raw.isBlank()) {
-            // Local default host-port from docker-compose: 43306 -> container 3306
-            raw = "43306";
+            raw = "43306";    // docker-compose host-port
         }
         return Integer.parseInt(raw.trim());
     }
 
     @Test
     void connectWithValidConfig() throws Exception {
-        // On GitHub Actions (CI=true) we skip this test – timing of the MySQL
-        // service can be flaky, and Db.connect is already covered by other ITPs.
         Assumptions.assumeFalse(
             "true".equalsIgnoreCase(System.getenv("CI")),
-            "Skip DbIT on CI – Db.connect is covered via WorldRepoIT"
+            "Skip DbIT on CI – Db.connect is covered via other ITPs"
         );
 
         final String h = host();
@@ -58,10 +53,8 @@ class DbIT {
             assertNotNull(c, "Connection should not be null");
             assertFalse(c.isClosed(), "Connection should be open");
         } catch (Exception ex) {
-            // If the DB is not reachable locally, treat this as "environment not ready"
-            // and skip rather than fail the build.
             Assumptions.assumeTrue(false,
-                "Skipping DbIT – database not reachable on " + h + ":" + p
+                "Skipping DbIT – DB not reachable on " + h + ":" + p
                     + " (" + ex.getClass().getSimpleName() + ": " + ex.getMessage() + ")");
         }
     }
