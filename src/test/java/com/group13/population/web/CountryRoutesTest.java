@@ -2,49 +2,65 @@ package com.group13.population.web;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.group13.population.repo.FakeCountryRepo;
 import com.group13.population.repo.WorldRepo;
 import com.group13.population.service.CountryService;
 import io.javalin.Javalin;
+import io.javalin.config.JavalinConfig;
+import io.javalin.testtools.HttpClient;
 import io.javalin.testtools.JavalinTest;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
+import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Route-level tests for country endpoints (R01–R06).
- * Uses Javalin TestTools with a FakeCountryRepo (no real DB).
+ * Integration tests for CountryRoutes (R01–R06) using Javalin TestTools.
  */
 class CountryRoutesTest {
 
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+
     /**
-     * Build a small fake app using an in-memory repository.
+     * Build a Javalin app wired with WorldRepo → CountryService → CountryRoutes.
+     * This app is started/stopped by JavalinTest for each test.
      */
     private static Javalin createApp() {
-        // Seed data used by FakeCountryRepo (no real database)
-        List<WorldRepo.CountryRow> seed = List.of(
-            new WorldRepo.CountryRow("A", "A", "X", "Y", 50, "cA"),
-            new WorldRepo.CountryRow("B", "B", "X", "Y", 40, "cB"),
-            new WorldRepo.CountryRow("C", "C", "X", "Y", 30, "cC")
-        );
-
-        FakeCountryRepo repo = new FakeCountryRepo(seed);
+        WorldRepo repo = new WorldRepo();
         CountryService service = new CountryService(repo);
         CountryRoutes routes = new CountryRoutes(service);
 
-        Javalin app = Javalin.create(cfg -> cfg.showJavalinBanner = false);
-        routes.register(app);
+        Javalin app = Javalin.create((JavalinConfig cfg) -> {
+            cfg.showJavalinBanner = false;
+        });
+
+        // Health endpoint (same behaviour as real app)
         app.get("/health", ctx -> ctx.result("OK"));
+
+        // Register R01–R06 HTTP routes
+        routes.register(app);
+
         return app;
     }
 
-    @Test
-    void healthEndpointReturnsOK() throws Exception {
-        Javalin app = createApp();
+    /**
+     * Helper: GET a path, assert 200, and parse the JSON body.
+     */
+    private static JsonNode getJson(HttpClient client, String path) throws IOException {
+        var res = client.get(path);
+        assertEquals(200, res.code(), "Expected 200 for " + path);
+        return MAPPER.readTree(res.body().string());
+    }
 
-        JavalinTest.test(app, (server, client) -> {
+    // -------------------------------------------------------------------------
+    // Tests
+    // -------------------------------------------------------------------------
+
+    @Test
+    @DisplayName("Health endpoint returns 200 OK")
+    void healthEndpointReturnsOK() {
+        JavalinTest.test(createApp(), (server, client) -> {
             var res = client.get("/health");
             assertEquals(200, res.code());
             assertEquals("OK", res.body().string());
@@ -52,22 +68,120 @@ class CountryRoutesTest {
     }
 
     @Test
-    void r04_worldTopNCountriesHappyPath() throws Exception {
-        Javalin app = createApp();
+    @DisplayName("R01 – all countries in the world are sorted by population DESC")
+    void r01_worldAllCountries_sortedByPopulationDesc() throws Exception {
+        JavalinTest.test(createApp(), (server, client) -> {
+            JsonNode list = getJson(client, "/api/countries/world");
 
-        JavalinTest.test(app, (server, client) -> {
-            var res = client.get("/api/countries/world/top/3");
-            assertEquals(200, res.code());
+            assertTrue(list.isArray(), "Expected JSON array for world countries");
 
-            ObjectMapper mapper = new ObjectMapper();
-            JsonNode list = mapper.readTree(res.body().string());
+            long previous = Long.MAX_VALUE;
+            for (JsonNode node : list) {
+                long pop = node.get("population").asLong();
+                assertTrue(pop <= previous, "Countries must be sorted by population DESC");
+                previous = pop;
+            }
+        });
+    }
+
+    @Test
+    @DisplayName("R02 – all countries in a continent are filtered to that continent and sorted")
+    void r02_allCountriesInContinent_filterAndSort() throws Exception {
+        JavalinTest.test(createApp(), (server, client) -> {
+            JsonNode list = getJson(client, "/api/countries/continent/Asia");
+
+            assertTrue(list.isArray(), "Expected JSON array for continent countries");
+
+            // Every row (if any) should be in Asia and ordered by population DESC
+            long previous = Long.MAX_VALUE;
+            for (JsonNode node : list) {
+                assertEquals("Asia", node.get("continent").asText(),
+                    "Country should be in Asia");
+                long pop = node.get("population").asLong();
+                assertTrue(pop <= previous, "Countries must be sorted by population DESC");
+                previous = pop;
+            }
+        });
+    }
+
+    @Test
+    @DisplayName("R03 – all countries in a region are filtered to that region and sorted")
+    void r03_allCountriesInRegion_filterAndSort() throws Exception {
+        JavalinTest.test(createApp(), (server, client) -> {
+            // Region name without spaces; "Caribbean" is a valid region in world DB
+            JsonNode list = getJson(client, "/api/countries/region/Caribbean");
+
+            assertTrue(list.isArray(), "Expected JSON array for region countries");
+
+            long previous = Long.MAX_VALUE;
+            for (JsonNode node : list) {
+                assertEquals("Caribbean", node.get("region").asText(),
+                    "Country should be in Caribbean region");
+                long pop = node.get("population").asLong();
+                assertTrue(pop <= previous, "Countries must be sorted by population DESC");
+                previous = pop;
+            }
+        });
+    }
+
+    @Test
+    @DisplayName("R04 – top-N countries in the world return at most N rows sorted by population DESC")
+    void r04_topNWorld_happyPath() throws Exception {
+        JavalinTest.test(createApp(), (server, client) -> {
+            int n = 5;
+            JsonNode list = getJson(client, "/api/countries/world/top/" + n);
 
             assertTrue(list.isArray());
-            assertEquals(3, list.size());
-            assertTrue(
-                list.get(0).get("population").asLong() >=
-                    list.get(1).get("population").asLong()
-            );
+            assertTrue(list.size() <= n, "Should return at most N rows");
+
+            long previous = Long.MAX_VALUE;
+            for (JsonNode node : list) {
+                long pop = node.get("population").asLong();
+                assertTrue(pop <= previous, "Countries must be sorted by population DESC");
+                previous = pop;
+            }
+        });
+    }
+
+    @Test
+    @DisplayName("R05 – top-N countries in a continent are filtered and limited correctly")
+    void r05_topNContinent_happyPath() throws Exception {
+        JavalinTest.test(createApp(), (server, client) -> {
+            int n = 3;
+            JsonNode list = getJson(client, "/api/countries/continent/Asia/top/" + n);
+
+            assertTrue(list.isArray());
+            assertTrue(list.size() <= n, "Should return at most N rows");
+
+            long previous = Long.MAX_VALUE;
+            for (JsonNode node : list) {
+                assertEquals("Asia", node.get("continent").asText(),
+                    "Country should be in Asia");
+                long pop = node.get("population").asLong();
+                assertTrue(pop <= previous, "Countries must be sorted by population DESC");
+                previous = pop;
+            }
+        });
+    }
+
+    @Test
+    @DisplayName("R06 – top-N countries in a region are filtered and limited correctly")
+    void r06_topNRegion_happyPath() throws Exception {
+        JavalinTest.test(createApp(), (server, client) -> {
+            int n = 3;
+            JsonNode list = getJson(client, "/api/countries/region/Caribbean/top/" + n);
+
+            assertTrue(list.isArray());
+            assertTrue(list.size() <= n, "Should return at most N rows");
+
+            long previous = Long.MAX_VALUE;
+            for (JsonNode node : list) {
+                assertEquals("Caribbean", node.get("region").asText(),
+                    "Country should be in Caribbean region");
+                long pop = node.get("population").asLong();
+                assertTrue(pop <= previous, "Countries must be sorted by population DESC");
+                previous = pop;
+            }
         });
     }
 }
