@@ -6,11 +6,22 @@ import java.sql.SQLException;
 
 /**
  * Minimal JDBC helper for MySQL.
- * Reads DB_ env vars in the same way as App/main + application.properties.
+ * Reads DB_* env vars in the same way as App/main + application.properties.
  */
 public final class Db {
+
     private Db() {
         // utility
+    }
+
+    /**
+     * Build the JDBC URL for a MySQL database.
+     * Extracted so we can unit test this logic without needing a running DB.
+     */
+    static String buildJdbcUrl(String host, int port, String database) {
+        return "jdbc:mysql://"
+            + host + ":" + port + "/" + database
+            + "?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
     }
 
     public static Connection connect(
@@ -26,10 +37,7 @@ public final class Db {
             // driver is loaded by SPI in newer JDKs, but keep this for safety
         }
 
-        String url = "jdbc:mysql://"
-            + host + ":" + port + "/" + database
-            + "?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
-
+        String url = buildJdbcUrl(host, port, database);
         return DriverManager.getConnection(url, user, pass);
     }
 }
