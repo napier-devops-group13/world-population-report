@@ -206,7 +206,7 @@
                 <exclude>**/*IT*</exclude>
 
                 <!-- infra that is hard to test and not core business logic -->
-                <exclude>com/group13/population/db/**</exclude>
+                <!-- Db is NOW INCLUDED for coverage; do not exclude it -->
                 <exclude>com/group13/population/App.class</exclude>
               </excludes>
             </configuration>

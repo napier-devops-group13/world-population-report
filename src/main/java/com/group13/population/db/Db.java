@@ -6,7 +6,6 @@ import java.sql.SQLException;
 
 /**
  * Minimal JDBC helper for MySQL.
- * Reads DB_* env vars in the same way as App/main + application.properties.
  */
 public final class Db {
 
