@@ -2,6 +2,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>com.group13.population</groupId>
@@ -38,6 +39,7 @@
     <spotbugs.plugin.version>4.8.6.5</spotbugs.plugin.version>
     <shade.plugin.version>3.6.0</shade.plugin.version>
     <jacoco.version>0.8.13</jacoco.version>
+    <exec.plugin.version>3.5.0</exec.plugin.version>
 
     <!-- Toggles -->
     <!-- set -Djacoco.skip=true to skip coverage locally -->
@@ -135,6 +137,16 @@
         </configuration>
       </plugin>
 
+      <!-- Run the app with mvn exec:java -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>${exec.plugin.version}</version>
+        <configuration>
+          <mainClass>com.group13.population.App</mainClass>
+        </configuration>
+      </plugin>
+
       <!-- Unit tests (no DB) -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -204,9 +216,7 @@
                 <!-- never count tests or IT classes -->
                 <exclude>**/*Test*</exclude>
                 <exclude>**/*IT*</exclude>
-
-                <!-- infra that is hard to test and not core business logic -->
-                <!-- Db is NOW INCLUDED for coverage; do not exclude it -->
+                <!-- exclude App main class from coverage -->
                 <exclude>com/group13/population/App.class</exclude>
               </excludes>
             </configuration>
