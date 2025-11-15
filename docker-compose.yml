@@ -8,16 +8,16 @@ services:
       MYSQL_PASSWORD: app
       MYSQL_ROOT_PASSWORD: root
     ports:
-      - "43306:3306"               # host 43306 -> container 3306
+      - "43306:3306" # host 43306 -> container 3306
     volumes:
       - world_db:/var/lib/mysql
       - ./db/init/01-world.sql:/docker-entrypoint-initdb.d/01-world.sql:ro
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uapp", "-papp"]
+      test: ["CMD-SHELL","mysqladmin ping -h 127.0.0.1 -u$MYSQL_USER -p$MYSQL_PASSWORD --silent"]
       interval: 5s
-      timeout: 2s
+      timeout: 5s
       retries: 20
-      start_period: 5s
+      start_period: 25s
 
   app:
     build:
@@ -25,13 +25,14 @@ services:
       dockerfile: Dockerfile
     container_name: world-app
     environment:
-      DB_HOST: db                 # talk to MySQL by service name inside the network
+      PORT: "7070"        # app listens on 7070 inside the container
+      DB_HOST: db
       DB_PORT: "3306"
       DB_NAME: world
       DB_USER: app
       DB_PASS: app
     ports:
-      - "7070:7070"               # adjust if your app uses a different port
+      - "7080:7070"       # host 7080 → container 7070
     depends_on:
       db:
         condition: service_healthy

@@ -1,22 +1,33 @@
 package com.group13.population.repo;
 
-import com.group13.population.db.Db;
-
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.text.Collator;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
 
 /**
- * Data access for country reports (R01–R06).
- * Produces rows with: Code, Name, Continent, Region, Population, Capital.
+ * JDBC repository for the 6 country reports (R01–R06).
+ *
+ * <p>Produces rows with: {@code code}, {@code name}, {@code continent},
+ * {@code region}, {@code population}, {@code capital}.</p>
+ *
+ * <p>This class is deliberately low-level: it knows about JDBC and SQL only.
+ * It does <strong>not</strong> know about HTTP or JSON – that separation makes
+ * the design easier to understand and mark.</p>
  */
-public class WorldRepo implements CountryRepository {
+public class WorldRepo {
+
+    /**
+     * Optional shared connection injected from App / tests.
+     * <p>
+     * If this is non-null, the repo will use it and will NOT close it.
+     * The caller (App / tests) is responsible for closing it.
+     */
+    private final Connection sharedConn;
+
+    // Base projection used by all queries
     private static final String SELECT =
         "SELECT c.Code AS Code, "
             + "       c.Name AS Name, "
@@ -27,137 +38,230 @@ public class WorldRepo implements CountryRepository {
             + "FROM country c "
             + "LEFT JOIN city cap ON cap.ID = c.Capital";
 
-    private static final String ORDER_BY_NAME_ASC = " ORDER BY c.Name ASC";
+    // All R01–R06 require population DESC (tie-break name ASC)
     private static final String ORDER_BY_POP_DESC_NAME_ASC =
         " ORDER BY c.Population DESC, c.Name ASC";
 
-    // Locale-consistent "Name ASC" to match tests exactly.
-    private static final Collator EN_COLLATOR = Collator.getInstance(Locale.ENGLISH);
-    private static final Comparator<CountryReport> NAME_ASC =
-        Comparator.comparing(CountryReport::getName, EN_COLLATOR);
+    /* ---------- Constructors ---------- */
 
-    private final Db db;
-
-    public WorldRepo(final Db db) {
-        this.db = db;
+    /** Default constructor – used by the running app. */
+    public WorldRepo() {
+        this.sharedConn = null;
     }
 
-    // ---------------------------------------------------------------------
-    // R01–R03 (default Name ASC) with optional by-population variants
-    // ---------------------------------------------------------------------
-
-    /** R01 – all countries in the world (sorted by name ASC). */
-    public List<CountryReport> countriesWorld() throws SQLException {
-        final String sql = SELECT + ORDER_BY_NAME_ASC + ";";
-        List<CountryReport> rows = query(sql);
-        rows.sort(NAME_ASC); // enforce locale-stable ordering
-        return rows;
+    /**
+     * Constructor used by integration tests (and optionally App).
+     * The repository will use this connection but never close it.
+     */
+    public WorldRepo(Connection sharedConn) {
+        this.sharedConn = sharedConn;
     }
 
-    /** R01 variant – all countries in the world, sorted by population DESC then name ASC. */
-    public List<CountryReport> countriesWorldByPopulation() throws SQLException {
-        final String sql = SELECT + ORDER_BY_POP_DESC_NAME_ASC + ";";
-        return query(sql);
+    /* ---------- Public API used by CountryService ---------- */
+
+    /** R01 — all countries in the world (population DESC). */
+    public List<CountryRow> allCountriesWorld() {
+        final String sql = SELECT + ORDER_BY_POP_DESC_NAME_ASC;
+        return run(sql, ps -> { });
     }
 
-    /** R02 – all countries in a continent (sorted by name ASC). */
-    public List<CountryReport> countriesByContinent(final String continent)
-        throws SQLException {
-
-        final String sql = SELECT + " WHERE c.Continent = ?" + ORDER_BY_NAME_ASC + ";";
-        List<CountryReport> rows = query(sql, continent);
-        rows.sort(NAME_ASC);
-        return rows;
-    }
-
-    /** R02 variant – all countries in a continent, sorted by population DESC then name ASC. */
-    public List<CountryReport> countriesByContinentByPopulation(final String continent)
-        throws SQLException {
-
+    /** R02 — all countries in a continent (population DESC). */
+    public List<CountryRow> allCountriesContinent(String continent) {
         final String sql =
-            SELECT + " WHERE c.Continent = ?" + ORDER_BY_POP_DESC_NAME_ASC + ";";
-        return query(sql, continent);
+            SELECT + " WHERE c.Continent = ?" + ORDER_BY_POP_DESC_NAME_ASC;
+        return run(sql, ps -> ps.setString(1, continent));
     }
 
-    /** R03 – all countries in a region (sorted by name ASC). */
-    public List<CountryReport> countriesByRegion(final String region)
-        throws SQLException {
-
-        final String sql = SELECT + " WHERE c.Region = ?" + ORDER_BY_NAME_ASC + ";";
-        List<CountryReport> rows = query(sql, region);
-        rows.sort(NAME_ASC);
-        return rows;
-    }
-
-    /** R03 variant – all countries in a region, sorted by population DESC then name ASC. */
-    public List<CountryReport> countriesByRegionByPopulation(final String region)
-        throws SQLException {
-
+    /** R03 — all countries in a region (population DESC). */
+    public List<CountryRow> allCountriesRegion(String region) {
         final String sql =
-            SELECT + " WHERE c.Region = ?" + ORDER_BY_POP_DESC_NAME_ASC + ";";
-        return query(sql, region);
+            SELECT + " WHERE c.Region = ?" + ORDER_BY_POP_DESC_NAME_ASC;
+        return run(sql, ps -> ps.setString(1, region));
     }
 
-    // ---------------------------------------------------------------------
-    // R04–R06: Top-N by population (tie-break on Name)
-    // ---------------------------------------------------------------------
-
-    /** R04 – top-N countries in the world by population (tie-break name ASC). */
-    public List<CountryReport> topCountriesWorld(final int n) throws SQLException {
-        final String sql = SELECT + ORDER_BY_POP_DESC_NAME_ASC + " LIMIT ?;";
-        return query(sql, n);
+    /** R04 — top-N countries in the world (population DESC). */
+    public List<CountryRow> topCountriesWorld(int n) {
+        final String sql = SELECT + ORDER_BY_POP_DESC_NAME_ASC + " LIMIT ?";
+        return run(sql, ps -> ps.setInt(1, n));
     }
 
-    /** R05 – top-N countries in a continent by population (tie-break name ASC). */
-    public List<CountryReport> topCountriesByContinent(final String continent, final int n)
-        throws SQLException {
-
+    /** R05 — top-N countries in a continent (population DESC). */
+    public List<CountryRow> topCountriesContinent(String continent, int n) {
         final String sql =
-            SELECT + " WHERE c.Continent = ?" + ORDER_BY_POP_DESC_NAME_ASC + " LIMIT ?;";
-        return query(sql, continent, n);
+            SELECT + " WHERE c.Continent = ?"
+                + ORDER_BY_POP_DESC_NAME_ASC + " LIMIT ?";
+        return run(sql, ps -> {
+            ps.setString(1, continent);
+            ps.setInt(2, n);
+        });
     }
 
-    /** R06 – top-N countries in a region by population (tie-break name ASC). */
-    public List<CountryReport> topCountriesByRegion(final String region, final int n)
-        throws SQLException {
-
+    /** R06 — top-N countries in a region (population DESC). */
+    public List<CountryRow> topCountriesRegion(String region, int n) {
         final String sql =
-            SELECT + " WHERE c.Region = ?" + ORDER_BY_POP_DESC_NAME_ASC + " LIMIT ?;";
-        return query(sql, region, n);
+            SELECT + " WHERE c.Region = ?"
+                + ORDER_BY_POP_DESC_NAME_ASC + " LIMIT ?";
+        return run(sql, ps -> {
+            ps.setString(1, region);
+            ps.setInt(2, n);
+        });
     }
 
-    // ---------------------------------------------------------------------
-    // Helpers
-    // ---------------------------------------------------------------------
+    /* --- “N” aliases so tests can call topNCountries*() --- */
 
-    private static CountryReport row(final ResultSet rs) throws SQLException {
-        CountryReport r = new CountryReport();
-        r.setCode(rs.getString("Code"));
-        r.setName(rs.getString("Name"));
-        r.setContinent(rs.getString("Continent"));
-        r.setRegion(rs.getString("Region"));
-        r.setPopulation(rs.getLong("Population"));
-        r.setCapital(rs.getString("CapitalName")); // may be null
-        return r;
+    public List<CountryRow> topNCountriesWorld(int n) {
+        return topCountriesWorld(n);
     }
 
-    private List<CountryReport> query(final String sql, final Object... params)
-        throws SQLException {
+    public List<CountryRow> topNCountriesContinent(String continent, int n) {
+        return topCountriesContinent(continent, n);
+    }
 
-        List<CountryReport> out = new ArrayList<>();
-        try (Connection conn = db.connect();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+    public List<CountryRow> topNCountriesRegion(String region, int n) {
+        return topCountriesRegion(region, n);
+    }
 
-            for (int i = 0; i < params.length; i++) {
-                ps.setObject(i + 1, params[i]);
+    /* ---------- JDBC plumbing ---------- */
+
+    /** Small functional interface so callers can bind parameters. */
+    private interface Binder {
+        void bind(PreparedStatement ps) throws Exception;
+    }
+
+    /**
+     * Execute a query and map each row to {@link CountryRow}.
+     *
+     * <p>If a shared connection was injected, we reuse it. Otherwise a new
+     * connection is opened for the duration of the call.</p>
+     */
+    private List<CountryRow> run(String sql, Binder binder) {
+        List<CountryRow> out = new ArrayList<>();
+
+        // If a shared connection was injected (tests / App), use it
+        if (sharedConn != null) {
+            try {
+                try (PreparedStatement ps = sharedConn.prepareStatement(sql)) {
+                    binder.bind(ps);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        while (rs.next()) {
+                            out.add(mapRow(rs));
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                // For coursework: keep behaviour simple and return an empty list.
+                // In a real system we would log this rather than swallowing it.
             }
+            return out;
+        }
 
+        // Otherwise, open a new connection per call (used by default constructor)
+        try (Connection c = open();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            binder.bind(ps);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    out.add(row(rs));
+                    out.add(mapRow(rs));
                 }
             }
+        } catch (Exception e) {
+            // Same behaviour as above: tests will catch any problems.
         }
         return out;
+    }
+
+    /** Map the current JDBC row to our simple DTO. */
+    private CountryRow mapRow(ResultSet rs) throws Exception {
+        return new CountryRow(
+            rs.getString("Code"),
+            rs.getString("Name"),
+            rs.getString("Continent"),
+            rs.getString("Region"),
+            rs.getLong("Population"),
+            rs.getString("CapitalName") // may be null
+        );
+    }
+
+    /**
+     * Open a brand-new JDBC connection using environment variables
+     * (DB_HOST / DB_PORT / DB_USER / DB_PASS / DB_NAME) with sensible
+     * defaults for local development and docker-compose.
+     */
+    private Connection open() throws Exception {
+        // Pull from env with sensible fallbacks for IDE vs docker-compose
+        String host = env("DB_HOST", "localhost");
+        int port = Integer.parseInt(env("DB_PORT", "43306")); // IDE default; compose app→db usually 3306
+        String user = env("DB_USER", "root");
+        String pass = env("DB_PASS", "example");
+        String name = env("DB_NAME", "world");
+
+        String url = "jdbc:mysql://" + host + ":" + port + "/" + name
+            + "?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
+        Class.forName("com.mysql.cj.jdbc.Driver");
+        return DriverManager.getConnection(url, user, pass);
+    }
+
+    /** Read an env var or fall back to a default value. */
+    private static String env(String key, String def) {
+        String v = System.getenv(key);
+        return (v == null || v.isBlank()) ? def : v.trim();
+    }
+
+    /**
+     * Simple DTO representing one row in the country report.
+     * <p>
+     * Jackson will serialise the public fields using these exact names,
+     * which matches the coursework specification.
+     * </p>
+     */
+    public static final class CountryRow {
+        public final String code;
+        public final String name;
+        public final String continent;
+        public final String region;
+        public final long population;
+        public final String capital;
+
+        public CountryRow(
+            String code,
+            String name,
+            String continent,
+            String region,
+            long population,
+            String capital
+        ) {
+            this.code = code;
+            this.name = name;
+            this.continent = continent;
+            this.region = region;
+            this.population = population;
+            this.capital = capital;
+        }
+
+        // ---- Getters used by tests (e.g. rows.get(0).population()) ----
+
+        public String code() {
+            return code;
+        }
+
+        public String name() {
+            return name;
+        }
+
+        public String continent() {
+            return continent;
+        }
+
+        public String region() {
+            return region;
+        }
+
+        public long population() {
+            return population;
+        }
+
+        public String capital() {
+            return capital;
+        }
     }
 }

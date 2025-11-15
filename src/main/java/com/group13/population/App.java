@@ -1,165 +1,150 @@
 package com.group13.population;
 
-import com.group13.population.db.Db;
-import com.group13.population.repo.CountryRepository;
 import com.group13.population.repo.WorldRepo;
+import com.group13.population.service.CountryService;
+import com.group13.population.web.CountryRoutes;
 import io.javalin.Javalin;
-import io.javalin.http.Context;
-import io.javalin.http.HttpStatus;
 
-import java.util.Map;
-import java.util.function.Function;
+import java.io.InputStream;
+import java.util.Properties;
 
 /**
- * App bootstrap + routes for Country reports (R01–R06).
+ * Application entry point for the World Population reporting API.
+ *
+ * <p>Responsibilities:</p>
+ * <ul>
+ *   <li>Load configuration (port) from environment and/or {@code application.properties}.</li>
+ *   <li>Wire together repository → service → HTTP routes.</li>
+ *   <li>Start and stop the Javalin web server.</li>
+ * </ul>
  */
 public final class App {
 
+    /** Default HTTP port used when no env/config value is provided. */
     private static final int DEFAULT_PORT = 7070;
 
-    private App() {
-        // empty ctor (space inside braces)
-    }
+    /** Utility class – no instances. */
+    private App() { }
 
-    public static void main(final String[] args) {
-        int port = readPort();
-        Javalin app = create();
-        app.start(port);
-        System.out.println("Listening on http://localhost:" + port);
+    /**
+     * Process entry point used in normal runs.
+     * <p>
+     * Delegates to {@link #start(int)} with {@code -1} so that
+     * the port is resolved from env/config/defaults.
+     */
+    public static void main(String[] args) {
+        // Normal run – use config/env/default (7070)
+        start(-1);
     }
 
     /**
-     * Build a configured Javalin app with all routes registered.
+     * Convenience overload for callers that do not care about the port.
+     * <p>
+     * Equivalent to {@code start(-1)}.
      */
-    public static Javalin create() {
-        // 1) Ensure DB is ready before serving
-        Db db = new Db();
-        db.awaitReady(30_000L, 500L);
+    public static Javalin start() {
+        return start(-1);
+    }
 
-        // 2) Repo (real implementation)
-        WorldRepo repo = new WorldRepo(db);
+    /**
+     * Start the application and return the running {@link Javalin} instance.
+     *
+     * <p>Port selection rules:</p>
+     * <ul>
+     *   <li>{@code overridePort > 0}  → bind exactly to that port</li>
+     *   <li>{@code overridePort == 0} → ask OS for any free port (ideal for tests)</li>
+     *   <li>{@code overridePort < 0}  → read port from env / application.properties / default</li>
+     * </ul>
+     *
+     * @param overridePort special port handling as described above
+     * @return the started Javalin server
+     */
+    public static Javalin start(int overridePort) {
+        Properties props = loadProps();
 
-        // 3) App + common error mapping + routes
-        Javalin app = Javalin.create(cfg -> {
-            cfg.plugins.enableCors(cors -> cors.add(it -> it.anyHost()));
-            cfg.showJavalinBanner = false;
-            cfg.http.defaultContentType = "application/json";
-        });
+        int configuredPort =
+            getIntEnv("PORT", getIntProp(props, "app.port", DEFAULT_PORT));
 
-        // Always JSON for 400 (bad input)
-        app.exception(IllegalArgumentException.class, (e, ctx) ->
-            ctx.status(HttpStatus.BAD_REQUEST)
-                .json(Map.of("error", e.getMessage()))
-        );
+        // Decide which port to use based on overridePort
+        int port;
+        if (overridePort > 0) {
+            port = overridePort;
+        } else if (overridePort == 0) {
+            // Ask OS for any free port – avoids “port already in use” in tests
+            port = 0;
+        } else {
+            port = configuredPort;
+        }
 
-        // Guard rail for unexpected errors
-        app.exception(Exception.class, (e, ctx) ->
-            ctx.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .json(Map.of("error", "internal server error"))
-        );
+        // Application wiring: repository → service → routes
+        WorldRepo repo = new WorldRepo();
+        CountryService service = new CountryService(repo);
+        CountryRoutes routes = new CountryRoutes(service);
 
-        registerRoutes(app, repo, "");
+        // Create Javalin without the banner to keep logs clean
+        Javalin app = Javalin.create(cfg -> cfg.showJavalinBanner = false);
+
+        // Register all HTTP endpoints and a simple health check
+        routes.register(app);
+        app.get("/health", ctx -> ctx.result("OK"));
+
+        app.start(port);
+
+        // Ensure the server shuts down cleanly when the JVM exits
+        Runtime.getRuntime().addShutdownHook(new Thread(app::stop));
+
         return app;
     }
 
+    // ---------- helpers ----------
+
     /**
-     * Resolve port from APP_PORT (defaults to 7070).
+     * Load {@code application.properties} from the classpath.
+     * Falls back to an empty {@link Properties} object when the file
+     * is missing or cannot be read.
      */
-    private static int readPort() {
-        String raw = System.getenv("APP_PORT");
+    private static Properties loadProps() {
+        Properties props = new Properties();
+        try (InputStream in = App.class.getClassLoader()
+            .getResourceAsStream("application.properties")) {
+            if (in != null) {
+                props.load(in);
+            }
+        } catch (Exception ignored) {
+            // On any error we simply fall back to defaults.
+        }
+        return props;
+    }
+
+    /**
+     * Read an integer value from an environment variable, returning a
+     * default when unset or not a valid integer.
+     */
+    private static int getIntEnv(String name, int defaultValue) {
+        String raw = System.getenv(name);
         if (raw == null || raw.isBlank()) {
-            return DEFAULT_PORT;
+            return defaultValue;
         }
         try {
             return Integer.parseInt(raw.trim());
-        } catch (NumberFormatException nfe) {
-            return DEFAULT_PORT;
+        } catch (NumberFormatException ex) {
+            return defaultValue;
         }
     }
 
     /**
-     * Register REST routes for R01–R06.
-     *
-     * @param app    Javalin app
-     * @param repo   Repository providing country data
-     * @param prefix Optional URL prefix ("" for normal app, "/api" for tests etc.)
+     * Read an integer value from {@link Properties}, returning a default
+     * when the key is missing or not a valid integer.
      */
-    public static void registerRoutes(final Javalin app,
-                                      final CountryRepository repo,
-                                      final String prefix) {
-
-        final String p = (prefix == null) ? "" : prefix;
-
-        // Simple health check
-        app.get(p + "/health", ctx -> ctx.result("ok"));
-
-        // Helper: ?sort=pop (case-insensitive)
-        Function<Context, Boolean> sortByPop = ctx -> {
-            String s = ctx.queryParam("sort");
-            return s != null && "pop".equalsIgnoreCase(s.trim());
-        };
-
-        // Helper: parse positive N (throws 400 with clear JSON)
-        Function<Context, Integer> parsePositiveN = ctx -> {
-            String raw = ctx.pathParam("n");
-            try {
-                int n = Integer.parseInt(raw);
-                if (n <= 0) {
-                    throw new IllegalArgumentException("n must be > 0");
-                }
-                return n;
-            } catch (NumberFormatException nfe) {
-                throw new IllegalArgumentException("n must be a positive integer");
-            }
-        };
-
-        // R01: all countries (world)
-        app.get(p + "/countries/world", ctx -> {
-            if (sortByPop.apply(ctx)) {
-                ctx.json(repo.countriesWorldByPopulation());
-            } else {
-                ctx.json(repo.countriesWorld());
-            }
-        });
-
-        // R02: all countries in a continent
-        app.get(p + "/countries/continent/{continent}", ctx -> {
-            String continent = ctx.pathParam("continent");
-            if (sortByPop.apply(ctx)) {
-                ctx.json(repo.countriesByContinentByPopulation(continent));
-            } else {
-                ctx.json(repo.countriesByContinent(continent));
-            }
-        });
-
-        // R03: all countries in a region
-        app.get(p + "/countries/region/{region}", ctx -> {
-            String region = ctx.pathParam("region");
-            if (sortByPop.apply(ctx)) {
-                ctx.json(repo.countriesByRegionByPopulation(region));
-            } else {
-                ctx.json(repo.countriesByRegion(region));
-            }
-        });
-
-        // R04: top-N countries (world)
-        app.get(p + "/countries/world/top/{n}", ctx -> {
-            int n = parsePositiveN.apply(ctx);
-            ctx.json(repo.topCountriesWorld(n));
-        });
-
-        // R05: top-N countries (continent)
-        app.get(p + "/countries/continent/{continent}/top/{n}", ctx -> {
-            String continent = ctx.pathParam("continent");
-            int n = parsePositiveN.apply(ctx);
-            ctx.json(repo.topCountriesByContinent(continent, n));
-        });
-
-        // R06: top-N countries (region)
-        app.get(p + "/countries/region/{region}/top/{n}", ctx -> {
-            String region = ctx.pathParam("region");
-            int n = parsePositiveN.apply(ctx);
-            ctx.json(repo.topCountriesByRegion(region, n));
-        });
+    private static int getIntProp(Properties props, String key, int defaultValue) {
+        String raw = props.getProperty(key);
+        if (raw == null || raw.isBlank()) {
+            return defaultValue;
+        }
+        try {
+            return Integer.parseInt(raw.trim());
+        } catch (NumberFormatException ex) {
+            return defaultValue;
+        }
     }
 }

@@ -10,23 +10,23 @@
   </a>
 
   <!-- Coverage (master) -->
-  <a href="https://app.codecov.io/gh/napier-devops-group13/world-population-report/branch/master">
-    <img alt="Coverage (master)" src="https://codecov.io/gh/napier-devops-group13/world-population-report/branch/master/graph/badge.svg">
+  <a href="https://app.codecov.io/gh/napier-devops-group13/world-population-report">
+    <img alt="Coverage" src="https://codecov.io/gh/napier-devops-group13/world-population-report/branch/master/graph/badge.svg">
   </a>
 
-  <!-- Latest release -->
+  <!-- Release + License + Tech -->
   <a href="https://github.com/napier-devops-group13/world-population-report/releases/latest">
-    <img alt="Latest release" src="https://badgen.net/github/release/napier-devops-group13/world-population-report?label=release">
+    <img
+      alt="Latest release"
+      src="https://badgen.net/github/release/napier-devops-group13/world-population-report?label=release" />
   </a>
 
-  <!-- License + tooling -->
   <a href="LICENSE">
     <img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg">
   </a>
-  <img alt="JDK 21+" src="https://img.shields.io/badge/JDK-21%2B-blue">
-  <img alt="Docker Compose" src="https://img.shields.io/badge/Docker-Compose-green">
+  <img alt="JDK" src="https://img.shields.io/badge/JDK-21%2B-blue">
+  <img alt="Compose" src="https://img.shields.io/badge/Docker-Compose-green">
 </p>
-
 
 REST API coursework for **SET09803** using the classic MySQL **`world`** dataset.  
 The project is built to be **CI-friendly**, **Dockerised**, and aligned with the **Code Review 1**, **Code Review 2**, and **Final Delivery** marking criteria.
@@ -95,25 +95,36 @@ These tests run with:
 ```bash
 mvn test
 ```
-
 ---
-## API Endpoints — Countries (R01–R06)
 
-**Base URL:** `http://localhost:7070`
+## API Endpoints – Countries (R01–R06)
 
-| ID  | Method | Endpoint                                       | Description                                      |
-|-----|--------|------------------------------------------------|--------------------------------------------------|
-| R01 | GET    | `/countries/world`                            | All countries in the world                       |
-| R02 | GET    | `/countries/continent/{continent}`            | All countries in a continent                     |
-| R03 | GET    | `/countries/region/{region}`                  | All countries in a region                        |
-| R04 | GET    | `/countries/world/top/{n}`                    | Top-N countries in the world by population       |
-| R05 | GET    | `/countries/continent/{continent}/top/{n}`    | Top-N countries in a continent by population     |
-| R06 | GET    | `/countries/region/{region}/top/{n}`          | Top-N countries in a region by population        |
+**Base URL:**
+
+- Local JVM (IntelliJ / `java -jar`): `http://localhost:7070/api`
+- Docker (`docker-compose up -d`): `http://localhost:7080/api`
+
+| ID  | Method | Endpoint                                   | Description                                                          |
+|-----|--------|---------------------------------------------|----------------------------------------------------------------------|
+| R01 | GET    | `/countries/world`                         | All countries in the world, ordered by **population DESC**.         |
+| R02 | GET    | `/countries/continent/{continent}`         | All countries in a continent, ordered by **population DESC**.       |
+| R03 | GET    | `/countries/region/{region}`               | All countries in a region, ordered by **population DESC**.          |
+| R04 | GET    | `/countries/world/top/{n}`                 | Top-N countries in the world by population (largest → smallest).    |
+| R05 | GET    | `/countries/continent/{continent}/top/{n}` | Top-N countries in a continent by population (largest → smallest).  |
+| R06 | GET    | `/countries/region/{region}/top/{n}`       | Top-N countries in a region by population (largest → smallest).     |
 
 **Error handling (examples):**
 
-- `n <= 0` or non-integer → **HTTP 400** JSON error (e.g. `{"error":"n must be > 0"}`).
-- Unknown continent/region → **400/404** depending on repository lookup.
+- `n <= 0` → **HTTP 400** with a plain-text message  
+  `n must be a positive integer`
+
+- Non-integer `n` → **HTTP 400** with a plain-text message  
+  `n must be an integer`
+
+- Unknown `continent` / `region` → **HTTP 200** with an empty JSON array `[]`
+  (no matching countries in the world database).
+
+
 ---
 ## Database & Seeding
 
@@ -124,12 +135,13 @@ mvn test
 
 `docker-compose.yml` exposes:
 
-- MySQL container port `3306` → host port `43306` (or similar).
-- App container port `7070` → host port `7070`.
+- MySQL container port `3306` → host port `43306`.
+- App container port `7070` → host port `7080` (used by the Docker smoke test and browser).
 
 ## Application database configuration
 
-Defaults for local development are in `src/main/resources/application.properties`:
+Defaults for local development (running the app directly from IntelliJ/Maven) are in  
+`src/main/resources/application.properties`:
 
 ```properties
 port=7070
@@ -140,47 +152,71 @@ DB_NAME=world
 DB_USER=app
 DB_PASS=app
 ```
+
+
 ---
+
 ## Project Structure
 
-| Path                                                         | Purpose                                                   |
-|--------------------------------------------------------------|-----------------------------------------------------------|
-| `src/main/java/com/group13/population/App.java`              | Javalin bootstrap + route wiring for **R01–R06**         |
-| `src/main/java/com/group13/population/db/Db.java`            | MySQL connection utilities + `awaitReady()`              |
-| `src/main/java/com/group13/population/repo/WorldRepo.java`   | SQL queries and mappers for country reports              |
-| `src/test/java/com/group13/population/SanityTest.java`       | Sanity/ordering tests on country data                    |
-| `src/test/java/com/group13/population/CountriesIT.java`      | Integration tests hitting the real database              |
-| `db/init/01-world.sql`                                       | Seed data for MySQL `world` schema                       |
-| `Dockerfile`                                                 | Multi-stage build for a small runnable image             |
-| `docker-compose.yml`                                         | Local stack: `db` + `app` services                       |
-| `pom.xml`                                                    | Maven config (shaded JAR, surefire/failsafe, JaCoCo, Checkstyle, SpotBugs) |
-| `.github/workflows/ci.yml`                                   | GitHub Actions pipeline (build, tests, coverage, Docker smoke) |
+| Path                                                                  | Purpose                                                                                          |
+|-----------------------------------------------------------------------|--------------------------------------------------------------------------------------------------|
+| `src/main/java/com/group13/population/App.java`                       | Javalin bootstrap / `main` entry-point; wires repo + service + routes and exposes `/health`.    |
+| `src/main/java/com/group13/population/db/Db.java`                     | MySQL JDBC helper used in tests – builds the JDBC URL and exposes `connect(..)` for experiments.|
+| `src/main/java/com/group13/population/model/Country.java`            | Domain model representing a row in the country reports (code, name, continent, region, etc.).   |
+| `src/main/java/com/group13/population/repo/CountryRepo.java`         | (Optional) repository interface describing the country report queries (R01–R06).                |
+| `src/main/java/com/group13/population/repo/WorldRepo.java`           | JDBC repository with SQL queries and mappers for the six country reports (R01–R06).             |
+| `src/main/java/com/group13/population/service/CountryService.java`   | Service layer: wraps `WorldRepo`, does light input validation, and returns report rows.         |
+| `src/main/java/com/group13/population/web/CountryRoutes.java`        | REST endpoints under `/api/countries/...` implemented with Javalin (R01–R06).                   |
+| `src/test/java/com/group13/population/db/DbTest.java`                | Unit tests for `Db` (JDBC URL formatting and failure behaviour when no server is running).      |
+| `src/test/java/com/group13/population/db/DbIT.java`                  | Integration test for `Db.connect(..)` against the real MySQL `world` database.                  |
+| `src/test/java/com/group13/population/model/CountryTest.java`        | Unit tests for the `Country` model (constructor, getters, equals/hashCode, `toString`).         |
+| `src/test/java/com/group13/population/service/CountryServiceTest.java`| Unit tests for `CountryService` covering all R01–R06 service methods.                           |
+| `src/test/java/com/group13/population/repo/WorldRepoIT.java`         | Integration tests using the real `world` schema via `WorldRepo` (ordering & filtering checks).  |
+| `src/test/java/com/group13/population/web/AppSmokeTest.java`         | Simple smoke test that starts the Javalin app on a random free port and then stops it cleanly.  |
+| `src/test/java/com/group13/population/web/CountryRoutesTest.java`    | Route tests for R01–R06 using Javalin’s test tools to call `/api/countries/...` endpoints.      |
+| `src/test/java/com/group13/population/web/CountryReportsOrderingTest.java` | Extra checks that report results are ordered by population DESC (and name as tie-break). |
+| `db/init/01-world.sql`                                               | Seed script for the MySQL `world` schema used by Docker and integration tests.                  |
+| `docs/evidence/*.csv` / `*.png`                                      | Captured outputs (CSV + screenshots) for R01–R06 used as grading evidence.                      |
+| `docs/evidence/generate-reports.ps1`                                 | Helper script to call the API and regenerate evidence files for the country reports.            |
+| `Dockerfile`                                                         | Docker build for the `world-population-report` app (packaged JAR + runtime image).              |
+| `docker-compose.yml`                                                 | Local stack: `db` (MySQL + seed) and `app` (Javalin API) services for coursework.               |
+| `pom.xml`                                                            | Maven configuration (JDK 21, unit + integration tests, JaCoCo, Checkstyle, SpotBugs, shading).  |
+| `.github/workflows/ci.yml`                                           | GitHub Actions pipeline: build, run unit & integration tests, produce coverage & QA reports.    |
+| `.github/ISSUE_TEMPLATE/*.yml`                                       | Issue templates for user stories and bug reports used in the Kanban / bug-reporting setup.      |
+| `.github/CODE_OF_CONDUCT.md` / `.github/CODEOWNERS`                  | Community standards and ownership metadata required by the coursework.                          |
+
+
 ---
+
+
 ## Quality & CI/CD
 
 - **CI triggers on:** pushes and PRs to `master`, `develop`, and `release/*`.
 
 - **Build & test:**
-  - Uses JDK 24 in CI.
-  - Spins up a MySQL service and seeds the `world` DB.
-  - Runs unit tests and integration tests (Failsafe).
-  - Publishes the shaded JAR as an artifact.
+  - Uses a Temurin JDK in CI (Maven compiler targets Java 21).
+  - Spins up a MySQL service and seeds the `world` database from `db/init/01-world.sql`.
+  - Runs unit tests and integration tests (`mvn verify` with Surefire + Failsafe).
+  - Publishes the shaded JAR from `target/world-population-report-*-shaded.jar` as an artifact.
 
 - **Coverage:**
-  - JaCoCo is run during CI.
-  - Coverage is uploaded to **Codecov**, surfacing in the README badge.
+  - JaCoCo runs as part of the Maven build.
+  - Coverage is uploaded to **Codecov**, which feeds the coverage badge in the README.
 
 - **Static analysis:**
-  - Checkstyle (Google config) and SpotBugs run as part of the Maven build.
+  - Checkstyle (Google-style configuration) and SpotBugs run as part of the Maven build.
 
 - **Docker smoke test:**
   - Builds the Docker image for the app.
-  - Runs the container against a MySQL service.
-  - Verifies `GET /countries/world` returns `200`.
+  - Runs the container alongside a MySQL service (same configuration as `docker-compose.yml`).
+  - Verifies `GET /api/countries/world` on the running container returns HTTP `200`.
+
+
 ---
 ## Functional Requirements (R01–R32)
 
-## Summary of the coursework functional requirements and current implementation status
+### Summary of the coursework functional requirements and current implementation status
+
 
 > **Count:** 6 / 32 requirements implemented (all **Country** reports R01–R06) → **18.75%**.
 
@@ -242,6 +278,8 @@ DB_PASS=app
 | 13 | Sprint Boards being used                            | ✅  | Iteration / sprint view screenshot                          |
 | 14 | Full use cases defined                              | ✅  | `docs/use-cases`                                            |
 | 15 | Use case diagram created                            | ✅  | UML diagram in `docs/uml`                                   |
+
+
 ---
 ### CR2 — Graded Criteria
 
@@ -255,6 +293,8 @@ DB_PASS=app
 | 6  | Badges (build master/develop, coverage, release, license)    | ✅           | This README header                                      |
 | 7  | Project Requirements Met (R01–R32)                            | **6 / 32**   | See **Functional Requirements** section                 |
 | 8  | Correct use of GitHub & Kanban; commit frequency; comments   | ✅           | Insights / commit history screenshots                   |
+
+
 ---
 ### Final — Delivery Checklist
 
@@ -265,8 +305,9 @@ DB_PASS=app
 | 3  | Master branch contains assessable code (builds & runs)           | ✅  | `mvn test` + manual run                         |
 | 4  | Final release/tag created                                        | ✅  | GitHub Releases                                 |
 | 5  | Individual contribution spreadsheet submitted (CR1 & CR2)        | ✅  | Submitted separately via Moodle                 |
----
 
+
+---
 ## Team
 
 This is a **Group 13** submission for **SET09803**.
@@ -279,7 +320,6 @@ The full team roster (names, student numbers and GitHub usernames) is listed in
 > official contribution spreadsheets submitted via Moodle, as required by the
 > module handbook. GitHub commit and pull-request history provides additional
 > evidence of each member’s contribution.
-
 
 ---
 ## License
