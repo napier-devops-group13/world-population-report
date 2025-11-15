@@ -16,8 +16,12 @@
 
   <!-- Release + License + Tech -->
   <a href="https://github.com/napier-devops-group13/world-population-report/releases/latest">
-    <img alt="Latest release" src="https://badgen.net/github/release/napier-devops-group13/world-population-report?label=release" />
+    <img
+      alt="Latest release"
+      src="https://img.shields.io/github/v/release/napier-devops-group13/world-population-report?label=release&sort=semver"
+    >
   </a>
+
 
   <a href="LICENSE">
     <img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg" />
