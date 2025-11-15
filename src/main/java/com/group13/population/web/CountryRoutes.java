@@ -5,14 +5,16 @@ import io.javalin.Javalin;
 import io.javalin.http.Context;
 
 /**
- * HTTP routes for R01–R06.
+ * HTTP routes for the country reports R01–R06.
  *
- * R01: all countries in the world
- * R02: all countries in a continent
- * R03: all countries in a region
- * R04: top-N countries in the world
- * R05: top-N countries in a continent
- * R06: top-N countries in a region
+ * <ul>
+ *   <li>R01: all countries in the world</li>
+ *   <li>R02: all countries in a continent</li>
+ *   <li>R03: all countries in a region</li>
+ *   <li>R04: top-N countries in the world</li>
+ *   <li>R05: top-N countries in a continent</li>
+ *   <li>R06: top-N countries in a region</li>
+ * </ul>
  */
 public final class CountryRoutes {
 
@@ -73,7 +75,14 @@ public final class CountryRoutes {
         });
     }
 
-    /** Convert {n} to positive int or write 400 and return null. */
+    /**
+     * Convert a path parameter {@code n} into a positive integer.
+     * <p>
+     * If parsing fails or the value is not positive, this method writes
+     * a 400 Bad Request response and returns {@code null}, which the
+     * caller checks for.
+     * </p>
+     */
     private Integer parsePositiveOr400(Context ctx, String raw) {
         try {
             int n = Integer.parseInt(raw);

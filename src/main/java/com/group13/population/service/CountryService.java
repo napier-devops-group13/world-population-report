@@ -7,7 +7,13 @@ import java.util.Objects;
 
 /**
  * Service layer for country reports (R01–R06).
- * Thin delegation to {@link WorldRepo} with light input hygiene.
+ *
+ * <p>This is a thin layer over {@link WorldRepo} that:
+ * <ul>
+ *   <li>exposes clearly-named methods for each requirement, and</li>
+ *   <li>performs light validation / sanitising of input.</li>
+ * </ul>
+ * Keeping this layer small makes the behaviour easy to unit test.</p>
  */
 public final class CountryService {
 
@@ -53,11 +59,20 @@ public final class CountryService {
 
     /* ================== helpers ================== */
 
+    /**
+     * Defensive helper – normalise potentially null/whitespace input
+     * coming from the web layer.
+     */
     private static String safe(String s) {
         return s == null ? "" : s.trim();
     }
 
+    /**
+     * Defensive helper – ensure we never ask the repo for zero or
+     * negative rows. Routes already validate this, but the default
+     * makes the method safe to call from anywhere.
+     */
     private static int positive(int n) {
-        return n <= 0 ? 1 : n; // routes already validate; keep defensive default
+        return n <= 0 ? 1 : n;
     }
 }
