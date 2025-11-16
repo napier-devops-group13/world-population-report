@@ -1,5 +1,6 @@
-# docs/evidence/generate-country-reports.ps1
-# Generate CSV evidence for R01–R06 under docs/evidence
+# docs/evidence/generate-capital-reports.ps1
+# Generate CSV evidence for capital city reports R17–R22 under docs/evidence
+# Columns: name, country, population
 
 # Fail fast if something goes wrong
 $ErrorActionPreference = "Stop"
@@ -31,7 +32,7 @@ function Save-ReportCsv {
     $response = Invoke-WebRequest -Uri $url -UseBasicParsing -ErrorAction Stop
   }
   catch {
-    Write-Error "Cannot reach $url. Is 'docker-compose up -d' running and the app listening on port 7080?"
+    Write-Error "Cannot reach $url. Is 'docker compose up -d' running and the app listening on port 7080?"
     return
   }
 
@@ -48,16 +49,22 @@ function Save-ReportCsv {
         $json = @($json)
       }
 
-      # Country report shape: code, name, continent, region, population, capital
-      if ($null -ne $json[0].code -and $null -ne $json[0].population) {
+      # Capital city report shape: name, country, population
+      if ($null -ne $json[0].name -and
+        $null -ne $json[0].country -and
+        $null -ne $json[0].population) {
+
+        # This gives header row: name,country,population
         $csvOutput = $json |
-          Select-Object code, name, continent, region, population, capital |
+          Select-Object name, country, population |
           ConvertTo-Csv -NoTypeInformation
-      } else {
+      }
+      else {
         # Unknown shape → just save raw text
         $csvOutput = $text
       }
-    } else {
+    }
+    else {
       $csvOutput = $text
     }
   }
@@ -76,25 +83,29 @@ function Save-ReportCsv {
   Write-Host "Saved -> $path" -ForegroundColor Green
 }
 
+# --------------------------------------------
+# Give the app a few seconds to finish starting
+# --------------------------------------------
+Start-Sleep -Seconds 5
+
 # -------------------------------
-# R01–R06 evidence CSVs
+# R17–R22 capital city evidence CSVs
 # -------------------------------
 
-# R01 – all countries in the world
-Save-ReportCsv "/countries/world"                    "R01_world.csv"
+# R17 – all capital cities in the world
+Save-ReportCsv "/capitals/world"                          "R17_world_capitals.csv"
 
-# R02 – all countries in a continent (example: Asia)
-Save-ReportCsv "/countries/continent/Asia"           "R02_continent_Asia.csv"
+# R18 – all capital cities in a continent (example: Asia)
+Save-ReportCsv "/capitals/continent/Asia"                 "R18_continent_Asia_capitals.csv"
 
-# R03 – all countries in a region (example: Eastern Asia)
-Save-ReportCsv "/countries/region/Eastern%20Asia"    "R03_region_EasternAsia.csv"
+# R19 – all capital cities in a region (example: Eastern Asia)
+Save-ReportCsv "/capitals/region/Eastern%20Asia"          "R19_region_EasternAsia_capitals.csv"
 
-# R04 – top-5 countries in the world
-Save-ReportCsv "/countries/world/top/5"              "R04_world_top5.csv"
+# R20 – top-5 capital cities in the world
+Save-ReportCsv "/capitals/world/top/5"                    "R20_world_capitals_top5.csv"
 
-# R05 – top-5 countries in a continent (example: Asia)
-Save-ReportCsv "/countries/continent/Asia/top/5"     "R05_continent_Asia_top5.csv"
+# R21 – top-5 capital cities in a continent (example: Asia)
+Save-ReportCsv "/capitals/continent/Asia/top/5"           "R21_continent_Asia_capitals_top5.csv"
 
-# R06 – top-5 countries in a region (example: Eastern Asia)
-Save-ReportCsv "/countries/region/Eastern%20Asia/top/5" `
-    "R06_region_EasternAsia_top5.csv"
+# R22 – top-5 capital cities in a region (example: Eastern Asia)
+Save-ReportCsv "/capitals/region/Eastern%20Asia/top/5"    "R22_region_EasternAsia_capitals_top5.csv"

@@ -101,32 +101,27 @@ mvn test
 ```
 ---
 
-## API Endpoints – Countries (R01–R06)
+## API Endpoints – Capital Cities (R17–R22)
 
-**Base URL:**
+**Base URL**
 
 - Local JVM (IntelliJ / `java -jar`): `http://localhost:7070/api`
-- Docker (`docker-compose up -d`): `http://localhost:7080/api`
+- Docker (`docker compose up -d`): `http://localhost:7080/api`
 
-| ID  | Method | Endpoint                                   | Description                                                          |
-|-----|--------|---------------------------------------------|----------------------------------------------------------------------|
-| R01 | GET    | `/countries/world`                         | All countries in the world, ordered by **population DESC**.         |
-| R02 | GET    | `/countries/continent/{continent}`         | All countries in a continent, ordered by **population DESC**.       |
-| R03 | GET    | `/countries/region/{region}`               | All countries in a region, ordered by **population DESC**.          |
-| R04 | GET    | `/countries/world/top/{n}`                 | Top-N countries in the world by population (largest → smallest).    |
-| R05 | GET    | `/countries/continent/{continent}/top/{n}` | Top-N countries in a continent by population (largest → smallest).  |
-| R06 | GET    | `/countries/region/{region}/top/{n}`       | Top-N countries in a region by population (largest → smallest).     |
+| ID  | Method | Endpoint                                         | Description                                                                      |
+|-----|--------|--------------------------------------------------|----------------------------------------------------------------------------------|
+| R17 | GET    | `/capitals/world`                               | All capital cities in the world, ordered by **population DESC**.                |
+| R18 | GET    | `/capitals/continent/{continent}`               | All capital cities in a continent, ordered by **population DESC**.              |
+| R19 | GET    | `/capitals/region/{region}`                     | All capital cities in a region, ordered by **population DESC**.                 |
+| R20 | GET    | `/capitals/world/top/{n}`                       | Top-`n` capital cities in the world by population (largest → smallest).         |
+| R21 | GET    | `/capitals/continent/{continent}/top/{n}`       | Top-`n` capital cities in a continent by population (largest → smallest).       |
+| R22 | GET    | `/capitals/region/{region}/top/{n}`             | Top-`n` capital cities in a region by population (largest → smallest).          |
 
-**Error handling (examples):**
+**Error handling (examples)**
 
-- `n <= 0` → **HTTP 400** with a plain-text message  
-  `n must be a positive integer`
-
-- Non-integer `n` → **HTTP 400** with a plain-text message  
-  `n must be an integer`
-
-- Unknown `continent` / `region` → **HTTP 200** with an empty JSON array `[]`
-  (no matching countries in the world database).
+- `n <= 0` → **HTTP 400** with plain-text message `n must be a positive integer`
+- Non-integer `n` → **HTTP 400** with plain-text message `n must be an integer`
+- Unknown `continent` / `region` → **HTTP 200** with empty JSON array `[]`
 
 
 ---
@@ -160,34 +155,30 @@ DB_PASS=app
 
 ---
 
-## Project Structure
+## Project Structure – Capital City Reports (R17–R22)
 
-| Path                                                                  | Purpose                                                                                          |
-|-----------------------------------------------------------------------|--------------------------------------------------------------------------------------------------|
-| `src/main/java/com/group13/population/App.java`                       | Javalin bootstrap / `main` entry-point; wires repo + service + routes and exposes `/health`.    |
-| `src/main/java/com/group13/population/db/Db.java`                     | MySQL JDBC helper used in tests – builds the JDBC URL and exposes `connect(..)` for experiments.|
-| `src/main/java/com/group13/population/model/Country.java`            | Domain model representing a row in the country reports (code, name, continent, region, etc.).   |
-| `src/main/java/com/group13/population/repo/CountryRepo.java`         | (Optional) repository interface describing the country report queries (R01–R06).                |
-| `src/main/java/com/group13/population/repo/WorldRepo.java`           | JDBC repository with SQL queries and mappers for the six country reports (R01–R06).             |
-| `src/main/java/com/group13/population/service/CountryService.java`   | Service layer: wraps `WorldRepo`, does light input validation, and returns report rows.         |
-| `src/main/java/com/group13/population/web/CountryRoutes.java`        | REST endpoints under `/api/countries/...` implemented with Javalin (R01–R06).                   |
-| `src/test/java/com/group13/population/db/DbTest.java`                | Unit tests for `Db` (JDBC URL formatting and failure behaviour when no server is running).      |
-| `src/test/java/com/group13/population/db/DbIT.java`                  | Integration test for `Db.connect(..)` against the real MySQL `world` database.                  |
-| `src/test/java/com/group13/population/model/CountryTest.java`        | Unit tests for the `Country` model (constructor, getters, equals/hashCode, `toString`).         |
-| `src/test/java/com/group13/population/service/CountryServiceTest.java`| Unit tests for `CountryService` covering all R01–R06 service methods.                           |
-| `src/test/java/com/group13/population/repo/WorldRepoIT.java`         | Integration tests using the real `world` schema via `WorldRepo` (ordering & filtering checks).  |
-| `src/test/java/com/group13/population/web/AppSmokeTest.java`         | Simple smoke test that starts the Javalin app on a random free port and then stops it cleanly.  |
-| `src/test/java/com/group13/population/web/CountryRoutesTest.java`    | Route tests for R01–R06 using Javalin’s test tools to call `/api/countries/...` endpoints.      |
-| `src/test/java/com/group13/population/web/CountryReportsOrderingTest.java` | Extra checks that report results are ordered by population DESC (and name as tie-break). |
-| `db/init/01-world.sql`                                               | Seed script for the MySQL `world` schema used by Docker and integration tests.                  |
-| `docs/evidence/*.csv` / `*.png`                                      | Captured outputs (CSV + screenshots) for R01–R06 used as grading evidence.                      |
-| `docs/evidence/generate-reports.ps1`                                 | Helper script to call the API and regenerate evidence files for the country reports.            |
-| `Dockerfile`                                                         | Docker build for the `world-population-report` app (packaged JAR + runtime image).              |
-| `docker-compose.yml`                                                 | Local stack: `db` (MySQL + seed) and `app` (Javalin API) services for coursework.               |
-| `pom.xml`                                                            | Maven configuration (JDK 21, unit + integration tests, JaCoCo, Checkstyle, SpotBugs, shading).  |
-| `.github/workflows/ci.yml`                                           | GitHub Actions pipeline: build, run unit & integration tests, produce coverage & QA reports.    |
-| `.github/ISSUE_TEMPLATE/*.yml`                                       | Issue templates for user stories and bug reports used in the Kanban / bug-reporting setup.      |
-| `.github/CODE_OF_CONDUCT.md` / `.github/CODEOWNERS`                  | Community standards and ownership metadata required by the coursework.                          |
+| Path                                                                 | Purpose                                                                                         |
+|----------------------------------------------------------------------|-------------------------------------------------------------------------------------------------|
+| `src/main/java/com/group13/population/App.java`                      | Javalin bootstrap; registers both **country** and **capital** routes and exposes `/health`.    |
+| `src/main/java/com/group13/population/db/Db.java`                    | MySQL JDBC helper used by repositories and integration tests.                                  |
+| `src/main/java/com/group13/population/model/CapitalCity.java`       | Domain model representing a capital city (name, country, population).                          |
+| `src/main/java/com/group13/population/repo/CapitalRepo.java`        | Repository interface describing the capital reports (R17–R22).                                 |
+| `src/main/java/com/group13/population/repo/CapitalRepoJdbc.java`    | JDBC implementation of `CapitalRepo` with SQL for R17–R22.                                     |
+| `src/main/java/com/group13/population/service/CapitalService.java`  | Service layer: wraps `CapitalRepo`, validates inputs, returns capital report rows.             |
+| `src/main/java/com/group13/population/web/CapitalRoutes.java`       | REST endpoints under `/api/capitals/...` implemented with Javalin (R17–R22).                   |
+| `src/test/java/com/group13/population/db/DbTest.java`               | Unit tests for `Db` (JDBC URL formatting and failure behaviour).                               |
+| `src/test/java/com/group13/population/db/DbIT.java`                 | Integration test for `Db.connect(..)` against the real MySQL `world` database.                 |
+| `src/test/java/com/group13/population/model/CapitalCityTest.java`   | Unit tests for `CapitalCity` (constructor, getters, equality, `toString`).                     |
+| `src/test/java/com/group13/population/repo/FakeCapitalRepo.java`    | In-memory fake implementation of `CapitalRepo` used by service and route tests.                |
+| `src/test/java/com/group13/population/repo/CapitalRepoJdbcIT.java`  | Integration tests for `CapitalRepoJdbc` using the real `world` schema.                         |
+| `src/test/java/com/group13/population/service/CapitalServiceTest.java` | Unit tests for `CapitalService` covering all R17–R22 service methods.                        |
+| `src/test/java/com/group13/population/web/CapitalRoutesTest.java`   | Route tests calling `/api/capitals/...` and asserting HTTP status + JSON body.                 |
+| `src/test/java/com/group13/population/web/CapitalReportsOrderingTest.java` | Extra checks that capital reports are ordered by population DESC (and name as tie-break). |
+| `src/test/java/com/group13/population/web/AppSmokeTest.java`        | Smoke test that the Javalin app starts and stops cleanly with all routes registered.           |
+| `db/init/01-world.sql`                                              | Seed script for the MySQL `world` schema used by Docker and integration tests.                 |
+| `docs/evidence/*.csv` / `*.png` (R17–R22)                           | Captured outputs (CSV + screenshots) for the capital city reports used as grading evidence.    |
+| `docs/evidence/generate-capital-reports.ps1`                        | Helper script to call the `/api/capitals/...` endpoints and regenerate evidence CSV files.     |
+| `verify-capital-reports.ps1`                                        | Local PowerShell helper that verifies R17–R22 endpoints respond correctly on port 7080.        |
 
 
 ---
@@ -217,12 +208,12 @@ DB_PASS=app
 
 
 ---
+
 ## Functional Requirements (R01–R32)
 
 ### Summary of the coursework functional requirements and current implementation status
 
-
-> **Count:** 6 / 32 requirements implemented (all **Country** reports R01–R06) → **18.75%**.
+> **Count:** 12 / 32 requirements implemented (all **Country** reports R01–R06 and all **Capital City** reports R17–R22) → **37.5%**.
 
 | ID  | Name                                                                                           |   Met   | Screenshot                                                                                                                | CSV file                                                                  |
 |-----|------------------------------------------------------------------------------------------------|:-------:|---------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------|
@@ -242,12 +233,12 @@ DB_PASS=app
 | R14 | The top N populated cities in a region where N is provided by the user.                        | ❌ No   | –                                                                                                                         | –                                                                         |
 | R15 | The top N populated cities in a country where N is provided by the user.                       | ❌ No   | –                                                                                                                         | –                                                                         |
 | R16 | The top N populated cities in a district where N is provided by the user.                      | ❌ No   | –                                                                                                                         | –                                                                         |
-| R17 | All the capital cities in the world organised by largest population to smallest.               | ❌ No   | –                                                                                                                         | –                                                                         |
-| R18 | All the capital cities in a continent organised by largest population to smallest.             | ❌ No   | –                                                                                                                         | –                                                                         |
-| R19 | All the capital cities in a region organised by largest population to smallest.                | ❌ No   | –                                                                                                                         | –                                                                         |
-| R20 | The top N populated capital cities in the world where N is provided by the user.               | ❌ No   | –                                                                                                                         | –                                                                         |
-| R21 | The top N populated capital cities in a continent where N is provided by the user.             | ❌ No   | –                                                                                                                         | –                                                                         |
-| R22 | The top N populated capital cities in a region where N is provided by the user.                | ❌ No   | –                                                                                                                         | –                                                                         |
+| R17 | All the capital cities in the world organised by largest population to smallest.               | ✅ Yes  | <img src="docs/evidence/R17_world_capitals.png" alt="R17 screenshot" width="300" />                                      | [R17_world_capitals.csv](docs/evidence/R17_world_capitals.csv)           |
+| R18 | All the capital cities in a continent organised by largest population to smallest.             | ✅ Yes  | <img src="docs/evidence/R18_continent_Asia_capitals.png" alt="R18 screenshot" width="220" />                             | [R18_continent_Asia_capitals.csv](docs/evidence/R18_continent_Asia_capitals.csv) |
+| R19 | All the capital cities in a region organised by largest population to smallest.                | ✅ Yes  | <img src="docs/evidence/R19_region_EasternAsia_capitals.png" alt="R19 screenshot" width="220" />                         | [R19_region_EasternAsia_capitals.csv](docs/evidence/R19_region_EasternAsia_capitals.csv) |
+| R20 | The top N populated capital cities in the world where N is provided by the user.               | ✅ Yes  | <img src="docs/evidence/R20_world_capitals_top5.png" alt="R20 screenshot" width="300" />                                 | [R20_world_capitals_top5.csv](docs/evidence/R20_world_capitals_top5.csv) |
+| R21 | The top N populated capital cities in a continent where N is provided by the user.             | ✅ Yes  | <img src="docs/evidence/R21_continent_Asia_capitals_top5.png" alt="R21 screenshot" width="220" />                        | [R21_continent_Asia_capitals_top5.csv](docs/evidence/R21_continent_Asia_capitals_top5.csv) |
+| R22 | The top N populated capital cities in a region where N is provided by the user.                | ✅ Yes  | <img src="docs/evidence/R22_region_EasternAsia_capitals_top5.png" alt="R22 screenshot" width="220" />                    | [R22_region_EasternAsia_capitals_top5.csv](docs/evidence/R22_region_EasternAsia_capitals_top5.csv) |
 | R23 | Population of people, in cities and not in cities, for each continent.                         | ❌ No   | –                                                                                                                         | –                                                                         |
 | R24 | Population of people, in cities and not in cities, for each region.                            | ❌ No   | –                                                                                                                         | –                                                                         |
 | R25 | Population of people, in cities and not in cities, for each country.                           | ❌ No   | –                                                                                                                         | –                                                                         |

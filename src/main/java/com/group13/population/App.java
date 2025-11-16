@@ -1,20 +1,20 @@
 package com.group13.population;
 
-import com.group13.population.repo.WorldRepo;
-import com.group13.population.service.CountryService;
-import com.group13.population.web.CountryRoutes;
+import com.group13.population.repo.CapitalRepoJdbc;
+import com.group13.population.service.CapitalService;
+import com.group13.population.web.CapitalRoutes;
 import io.javalin.Javalin;
 
 import java.io.InputStream;
 import java.util.Properties;
 
 /**
- * Application entry point for the World Population reporting API.
+ * Application entry point for the World Population Capital City reporting API.
  *
  * <p>Responsibilities:</p>
  * <ul>
  *   <li>Load configuration (port) from environment and/or {@code application.properties}.</li>
- *   <li>Wire together repository → service → HTTP routes.</li>
+ *   <li>Wire together capital-city repository → service → HTTP routes.</li>
  *   <li>Start and stop the Javalin web server.</li>
  * </ul>
  */
@@ -76,16 +76,17 @@ public final class App {
             port = configuredPort;
         }
 
-        // Application wiring: repository → service → routes
-        WorldRepo repo = new WorldRepo();
-        CountryService service = new CountryService(repo);
-        CountryRoutes routes = new CountryRoutes(service);
+        // ================= Capital-city application wiring (R17–R22) =================
+
+        CapitalRepoJdbc repo = new CapitalRepoJdbc();
+        CapitalService service = new CapitalService(repo);
+        CapitalRoutes routes = new CapitalRoutes(service);
 
         // Create Javalin without the banner to keep logs clean
         Javalin app = Javalin.create(cfg -> cfg.showJavalinBanner = false);
 
         // Register all HTTP endpoints and a simple health check
-        routes.register(app);
+        routes.register(app);          // /api/capitals/...
         app.get("/health", ctx -> ctx.result("OK"));
 
         app.start(port);
