@@ -1,4 +1,4 @@
-# docs/evidence/generate-reports.ps1
+# docs/evidence/generate-country-reports.ps1
 # Generate CSV evidence for R01–R06 under docs/evidence
 
 # Fail fast if something goes wrong
