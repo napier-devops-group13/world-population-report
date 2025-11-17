@@ -75,6 +75,8 @@ function Save-ReportCsv {
   $csvOutput | Set-Content -Path $path -Encoding UTF8
   Write-Host "Saved -> $path" -ForegroundColor Green
 }
+# Give the app a few seconds if you just started it
+Start-Sleep -Seconds 5
 
 # -------------------------------
 # R01–R06 evidence CSVs

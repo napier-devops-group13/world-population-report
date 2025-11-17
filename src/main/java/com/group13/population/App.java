@@ -1,7 +1,10 @@
 package com.group13.population;
 
+import com.group13.population.repo.WorldRepo;
 import com.group13.population.repo.CapitalRepoJdbc;
+import com.group13.population.service.CountryService;
 import com.group13.population.service.CapitalService;
+import com.group13.population.web.CountryRoutes;
 import com.group13.population.web.CapitalRoutes;
 import io.javalin.Javalin;
 
@@ -9,55 +12,41 @@ import java.io.InputStream;
 import java.util.Properties;
 
 /**
- * Application entry point for the World Population Capital City reporting API.
+ * Application entry point for the World Population reporting API.
  *
- * <p>Responsibilities:</p>
- * <ul>
- *   <li>Load configuration (port) from environment and/or {@code application.properties}.</li>
- *   <li>Wire together capital-city repository → service → HTTP routes.</li>
- *   <li>Start and stop the Javalin web server.</li>
- * </ul>
+ * Supports:
+ *  - R01–R06  Country reports  (/api/countries/...)
+ *  - R17–R22  Capital reports   (/api/capitals/...)
  */
 public final class App {
 
     /** Default HTTP port used when no env/config value is provided. */
     private static final int DEFAULT_PORT = 7070;
 
-    /** Utility class – no instances. */
-    private App() { }
-
-    /**
-     * Process entry point used in normal runs.
-     * <p>
-     * Delegates to {@link #start(int)} with {@code -1} so that
-     * the port is resolved from env/config/defaults.
-     */
-    public static void main(String[] args) {
-        // Normal run – use config/env/default (7070)
-        start(-1);
+    private App() {
+        // utility class
     }
 
     /**
-     * Convenience overload for callers that do not care about the port.
-     * <p>
-     * Equivalent to {@code start(-1)}.
+     * Normal process entry point.
+     * Uses env/config/defaults to choose the port.
      */
+    public static void main(String[] args) {
+        start(-1);
+    }
+
+    /** Convenience overload for callers that don’t care about the port. */
     public static Javalin start() {
         return start(-1);
     }
 
     /**
-     * Start the application and return the running {@link Javalin} instance.
+     * Start the application and return the running Javalin instance.
      *
-     * <p>Port selection rules:</p>
-     * <ul>
-     *   <li>{@code overridePort > 0}  → bind exactly to that port</li>
-     *   <li>{@code overridePort == 0} → ask OS for any free port (ideal for tests)</li>
-     *   <li>{@code overridePort < 0}  → read port from env / application.properties / default</li>
-     * </ul>
-     *
-     * @param overridePort special port handling as described above
-     * @return the started Javalin server
+     * Port selection rules:
+     *  - overridePort > 0  → bind exactly to that port
+     *  - overridePort == 0 → “any free port” (useful for tests)
+     *  - overridePort < 0  → use env / application.properties / default
      */
     public static Javalin start(int overridePort) {
         Properties props = loadProps();
@@ -65,33 +54,36 @@ public final class App {
         int configuredPort =
             getIntEnv("PORT", getIntProp(props, "app.port", DEFAULT_PORT));
 
-        // Decide which port to use based on overridePort
         int port;
         if (overridePort > 0) {
             port = overridePort;
         } else if (overridePort == 0) {
-            // Ask OS for any free port – avoids “port already in use” in tests
-            port = 0;
+            port = 0;        // ask OS for a free port
         } else {
             port = configuredPort;
         }
 
-        // ================= Capital-city application wiring (R17–R22) =================
+        // ================= COUNTRY REPORTS (R01–R06) =================
+        WorldRepo countryRepo = new WorldRepo();          // uses Db internally
+        CountryService countryService = new CountryService(countryRepo);
+        CountryRoutes countryRoutes = new CountryRoutes(countryService);
 
-        CapitalRepoJdbc repo = new CapitalRepoJdbc();
-        CapitalService service = new CapitalService(repo);
-        CapitalRoutes routes = new CapitalRoutes(service);
+        // ================= CAPITAL REPORTS (R17–R22) ==================
+        CapitalRepoJdbc capitalRepo = new CapitalRepoJdbc();
+        CapitalService capitalService = new CapitalService(capitalRepo);
+        CapitalRoutes capitalRoutes = new CapitalRoutes(capitalService);
 
-        // Create Javalin without the banner to keep logs clean
+        // ================= Javalin wiring ==============================
         Javalin app = Javalin.create(cfg -> cfg.showJavalinBanner = false);
 
-        // Register all HTTP endpoints and a simple health check
-        routes.register(app);          // /api/capitals/...
+        // Register ALL HTTP endpoints
+        countryRoutes.register(app);   // /api/countries/...
+        capitalRoutes.register(app);   // /api/capitals/...
         app.get("/health", ctx -> ctx.result("OK"));
 
         app.start(port);
 
-        // Ensure the server shuts down cleanly when the JVM exits
+        // Clean shutdown when JVM exits
         Runtime.getRuntime().addShutdownHook(new Thread(app::stop));
 
         return app;
@@ -99,11 +91,7 @@ public final class App {
 
     // ---------- helpers ----------
 
-    /**
-     * Load {@code application.properties} from the classpath.
-     * Falls back to an empty {@link Properties} object when the file
-     * is missing or cannot be read.
-     */
+    /** Load application.properties from the classpath if present. */
     private static Properties loadProps() {
         Properties props = new Properties();
         try (InputStream in = App.class.getClassLoader()
@@ -112,15 +100,12 @@ public final class App {
                 props.load(in);
             }
         } catch (Exception ignored) {
-            // On any error we simply fall back to defaults.
+            // fall back to defaults
         }
         return props;
     }
 
-    /**
-     * Read an integer value from an environment variable, returning a
-     * default when unset or not a valid integer.
-     */
+    /** Read an int from an environment variable, with a safe default. */
     private static int getIntEnv(String name, int defaultValue) {
         String raw = System.getenv(name);
         if (raw == null || raw.isBlank()) {
@@ -133,10 +118,7 @@ public final class App {
         }
     }
 
-    /**
-     * Read an integer value from {@link Properties}, returning a default
-     * when the key is missing or not a valid integer.
-     */
+    /** Read an int from Properties, with a safe default. */
     private static int getIntProp(Properties props, String key, int defaultValue) {
         String raw = props.getProperty(key);
         if (raw == null || raw.isBlank()) {
