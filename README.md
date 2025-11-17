@@ -49,6 +49,7 @@ Currently the project:
 
 - [Quick Start](#quick-start)
 - [API Endpoints — Countries (R01–R06)](#api-endpoints--countries-r01r06)
+- [API Endpoints — Capital (R17–R22)](#api-endpoints--capital-r17r22)
 - [Testing & Coverage](#testing-&-coverage)
 - [Report Evidence for R01–R06](#report-evidence-for-r01r06)
 - [Database & Seeding](#database--seeding)
@@ -101,6 +102,36 @@ mvn test
 ```
 ---
 
+## API Endpoints – Countries (R01–R06)
+
+**Base URL:**
+
+- Local JVM (IntelliJ / `java -jar`): `http://localhost:7070/api`
+- Docker (`docker-compose up -d`): `http://localhost:7080/api`
+
+| ID  | Method | Endpoint                                   | Description                                                          |
+|-----|--------|---------------------------------------------|----------------------------------------------------------------------|
+| R01 | GET    | `/countries/world`                         | All countries in the world, ordered by **population DESC**.         |
+| R02 | GET    | `/countries/continent/{continent}`         | All countries in a continent, ordered by **population DESC**.       |
+| R03 | GET    | `/countries/region/{region}`               | All countries in a region, ordered by **population DESC**.          |
+| R04 | GET    | `/countries/world/top/{n}`                 | Top-N countries in the world by population (largest → smallest).    |
+| R05 | GET    | `/countries/continent/{continent}/top/{n}` | Top-N countries in a continent by population (largest → smallest).  |
+| R06 | GET    | `/countries/region/{region}/top/{n}`       | Top-N countries in a region by population (largest → smallest).     |
+
+
+**Error handling (examples):**
+
+- `n <= 0` → **HTTP 400** with a plain-text message  
+  `n must be a positive integer`
+
+- Non-integer `n` → **HTTP 400** with a plain-text message  
+  `n must be an integer`
+
+- Unknown `continent` / `region` → **HTTP 200** with an empty JSON array `[]`
+  (no matching countries in the world database).
+
+---
+
 ## API Endpoints – Capital Cities (R17–R22)
 
 **Base URL**
@@ -125,6 +156,7 @@ mvn test
 
 
 ---
+
 ## Database & Seeding
 
 - **Image:** `mysql:8.4`
@@ -154,6 +186,39 @@ DB_PASS=app
 
 
 ---
+
+## Project Structure
+
+| Path                                                                  | Purpose                                                                                          |
+|-----------------------------------------------------------------------|--------------------------------------------------------------------------------------------------|
+| `src/main/java/com/group13/population/App.java`                       | Javalin bootstrap / `main` entry-point; wires repo + service + routes and exposes `/health`.    |
+| `src/main/java/com/group13/population/db/Db.java`                     | MySQL JDBC helper used in tests – builds the JDBC URL and exposes `connect(..)` for experiments.|
+| `src/main/java/com/group13/population/model/Country.java`            | Domain model representing a row in the country reports (code, name, continent, region, etc.).   |
+| `src/main/java/com/group13/population/repo/CountryRepo.java`         | (Optional) repository interface describing the country report queries (R01–R06).                |
+| `src/main/java/com/group13/population/repo/WorldRepo.java`           | JDBC repository with SQL queries and mappers for the six country reports (R01–R06).             |
+| `src/main/java/com/group13/population/service/CountryService.java`   | Service layer: wraps `WorldRepo`, does light input validation, and returns report rows.         |
+| `src/main/java/com/group13/population/web/CountryRoutes.java`        | REST endpoints under `/api/countries/...` implemented with Javalin (R01–R06).                   |
+| `src/test/java/com/group13/population/db/DbTest.java`                | Unit tests for `Db` (JDBC URL formatting and failure behaviour when no server is running).      |
+| `src/test/java/com/group13/population/db/DbIT.java`                  | Integration test for `Db.connect(..)` against the real MySQL `world` database.                  |
+| `src/test/java/com/group13/population/model/CountryTest.java`        | Unit tests for the `Country` model (constructor, getters, equals/hashCode, `toString`).         |
+| `src/test/java/com/group13/population/service/CountryServiceTest.java`| Unit tests for `CountryService` covering all R01–R06 service methods.                           |
+| `src/test/java/com/group13/population/repo/WorldRepoIT.java`         | Integration tests using the real `world` schema via `WorldRepo` (ordering & filtering checks).  |
+| `src/test/java/com/group13/population/web/AppSmokeTest.java`         | Simple smoke test that starts the Javalin app on a random free port and then stops it cleanly.  |
+| `src/test/java/com/group13/population/web/CountryRoutesTest.java`    | Route tests for R01–R06 using Javalin’s test tools to call `/api/countries/...` endpoints.      |
+| `src/test/java/com/group13/population/web/CountryReportsOrderingTest.java` | Extra checks that report results are ordered by population DESC (and name as tie-break). |
+| `db/init/01-world.sql`                                               | Seed script for the MySQL `world` schema used by Docker and integration tests.                  |
+| `docs/evidence/*.csv` / `*.png`                                      | Captured outputs (CSV + screenshots) for R01–R06 used as grading evidence.                      |
+| `docs/evidence/generate-reports.ps1`                                 | Helper script to call the API and regenerate evidence files for the country reports.            |
+| `Dockerfile`                                                         | Docker build for the `world-population-report` app (packaged JAR + runtime image).              |
+| `docker-compose.yml`                                                 | Local stack: `db` (MySQL + seed) and `app` (Javalin API) services for coursework.               |
+| `pom.xml`                                                            | Maven configuration (JDK 21, unit + integration tests, JaCoCo, Checkstyle, SpotBugs, shading).  |
+| `.github/workflows/ci.yml`                                           | GitHub Actions pipeline: build, run unit & integration tests, produce coverage & QA reports.    |
+| `.github/ISSUE_TEMPLATE/*.yml`                                       | Issue templates for user stories and bug reports used in the Kanban / bug-reporting setup.      |
+| `.github/CODE_OF_CONDUCT.md` / `.github/CODEOWNERS`                  | Community standards and ownership metadata required by the coursework.                          |
+
+
+---
+
 
 ## Project Structure – Capital City Reports (R17–R22)
 
