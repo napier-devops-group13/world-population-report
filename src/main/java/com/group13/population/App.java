@@ -1,11 +1,8 @@
 package com.group13.population;
 
-import com.group13.population.repo.WorldRepo;
-import com.group13.population.repo.CapitalRepoJdbc;
-import com.group13.population.service.CountryService;
-import com.group13.population.service.CapitalService;
-import com.group13.population.web.CountryRoutes;
-import com.group13.population.web.CapitalRoutes;
+import com.group13.population.repo.CityWorldRepo;
+import com.group13.population.service.CityService;
+import com.group13.population.web.CityRoutes;
 import io.javalin.Javalin;
 
 import java.io.InputStream;
@@ -15,8 +12,7 @@ import java.util.Properties;
  * Application entry point for the World Population reporting API.
  *
  * Supports:
- *  - R01–R06  Country reports  (/api/countries/...)
- *  - R17–R22  Capital reports   (/api/capitals/...)
+ *  - R07–R16  City reports  (/api/cities/...)
  */
 public final class App {
 
@@ -24,7 +20,7 @@ public final class App {
     private static final int DEFAULT_PORT = 7070;
 
     private App() {
-        // utility class
+        // utility class – no instances
     }
 
     /**
@@ -63,22 +59,16 @@ public final class App {
             port = configuredPort;
         }
 
-        // ================= COUNTRY REPORTS (R01–R06) =================
-        WorldRepo countryRepo = new WorldRepo();          // uses Db internally
-        CountryService countryService = new CountryService(countryRepo);
-        CountryRoutes countryRoutes = new CountryRoutes(countryService);
+        // ================== CITY REPORTS (R07–R16) ===================
+        CityWorldRepo cityRepo = new CityWorldRepo();   // uses Db.connect(...) internally
+        CityService cityService = new CityService(cityRepo);
+        CityRoutes cityRoutes = new CityRoutes(cityService);
 
-        // ================= CAPITAL REPORTS (R17–R22) ==================
-        CapitalRepoJdbc capitalRepo = new CapitalRepoJdbc();
-        CapitalService capitalService = new CapitalService(capitalRepo);
-        CapitalRoutes capitalRoutes = new CapitalRoutes(capitalService);
-
-        // ================= Javalin wiring ==============================
+        // ================= Javalin wiring ============================
         Javalin app = Javalin.create(cfg -> cfg.showJavalinBanner = false);
 
-        // Register ALL HTTP endpoints
-        countryRoutes.register(app);   // /api/countries/...
-        capitalRoutes.register(app);   // /api/capitals/...
+        // Register HTTP endpoints
+        cityRoutes.register(app);      // /api/cities/...
         app.get("/health", ctx -> ctx.result("OK"));
 
         app.start(port);
