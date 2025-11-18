@@ -102,57 +102,49 @@ mvn test
 ```
 ---
 
-## API Endpoints – Countries (R01–R06)
+## API Endpoints – Cities (R07–R16)
 
 **Base URL:**
 
 - Local JVM (IntelliJ / `java -jar`): `http://localhost:7070/api`
 - Docker (`docker-compose up -d`): `http://localhost:7080/api`
 
-| ID  | Method | Endpoint                                   | Description                                                          |
-|-----|--------|---------------------------------------------|----------------------------------------------------------------------|
-| R01 | GET    | `/countries/world`                         | All countries in the world, ordered by **population DESC**.         |
-| R02 | GET    | `/countries/continent/{continent}`         | All countries in a continent, ordered by **population DESC**.       |
-| R03 | GET    | `/countries/region/{region}`               | All countries in a region, ordered by **population DESC**.          |
-| R04 | GET    | `/countries/world/top/{n}`                 | Top-N countries in the world by population (largest → smallest).    |
-| R05 | GET    | `/countries/continent/{continent}/top/{n}` | Top-N countries in a continent by population (largest → smallest).  |
-| R06 | GET    | `/countries/region/{region}/top/{n}`       | Top-N countries in a region by population (largest → smallest).     |
+City report responses use the **City report shape**:
 
+- `name` – city name
+- `country` – country name
+- `district` – district name
+- `population` – city population (integer)
+
+| ID  | Method | Endpoint                                      | Description                                                                                  |
+|-----|--------|-----------------------------------------------|----------------------------------------------------------------------------------------------|
+| R07 | GET    | `/cities/world`                              | All cities in the world, ordered by **population DESC**.                                     |
+| R08 | GET    | `/cities/continent/{continent}`              | All cities in a continent, ordered by **population DESC**.                                   |
+| R09 | GET    | `/cities/region/{region}`                    | All cities in a region, ordered by **population DESC**.                                      |
+| R10 | GET    | `/cities/country/{country}`                  | All cities in a country, ordered by **population DESC**.                                     |
+| R11 | GET    | `/cities/district/{district}`                | All cities in a district, ordered by **population DESC**.                                    |
+| R12 | GET    | `/cities/world/top`                          | Top-N cities in the world by population (largest → smallest). Uses query param `?n={n}`.     |
+| R13 | GET    | `/cities/continent/{continent}/top`          | Top-N cities in a continent by population. Uses query param `?n={n}`.                        |
+| R14 | GET    | `/cities/region/{region}/top`                | Top-N cities in a region by population. Uses query param `?n={n}`.                           |
+| R15 | GET    | `/cities/country/{country}/top`              | Top-N cities in a country by population. Uses query param `?n={n}`.                          |
+| R16 | GET    | `/cities/district/{district}/top`            | Top-N cities in a district by population. Uses query param `?n={n}`.                         |
+
+**Query parameter for Top-N endpoints:**
+
+- `n` (required for R12–R16 when called externally; default is `10` if omitted in internal usage)
+  - Example: `/cities/world/top?n=5`
+  - Example: `/cities/continent/Asia/top?n=5`
 
 **Error handling (examples):**
 
-- `n <= 0` → **HTTP 400** with a plain-text message  
-  `n must be a positive integer`
-
-- Non-integer `n` → **HTTP 400** with a plain-text message  
+- Missing or invalid `n` (e.g. not a number) → **HTTP 400** with plain-text message  
   `n must be an integer`
 
-- Unknown `continent` / `region` → **HTTP 200** with an empty JSON array `[]`
-  (no matching countries in the world database).
+- `n <= 0` → **HTTP 400** with plain-text message  
+  `n must be a positive integer`
 
----
-
-## API Endpoints – Capital Cities (R17–R22)
-
-**Base URL**
-
-- Local JVM (IntelliJ / `java -jar`): `http://localhost:7070/api`
-- Docker (`docker compose up -d`): `http://localhost:7080/api`
-
-| ID  | Method | Endpoint                                         | Description                                                                      |
-|-----|--------|--------------------------------------------------|----------------------------------------------------------------------------------|
-| R17 | GET    | `/capitals/world`                               | All capital cities in the world, ordered by **population DESC**.                |
-| R18 | GET    | `/capitals/continent/{continent}`               | All capital cities in a continent, ordered by **population DESC**.              |
-| R19 | GET    | `/capitals/region/{region}`                     | All capital cities in a region, ordered by **population DESC**.                 |
-| R20 | GET    | `/capitals/world/top/{n}`                       | Top-`n` capital cities in the world by population (largest → smallest).         |
-| R21 | GET    | `/capitals/continent/{continent}/top/{n}`       | Top-`n` capital cities in a continent by population (largest → smallest).       |
-| R22 | GET    | `/capitals/region/{region}/top/{n}`             | Top-`n` capital cities in a region by population (largest → smallest).          |
-
-**Error handling (examples)**
-
-- `n <= 0` → **HTTP 400** with plain-text message `n must be a positive integer`
-- Non-integer `n` → **HTTP 400** with plain-text message `n must be an integer`
-- Unknown `continent` / `region` → **HTTP 200** with empty JSON array `[]`
+- Unknown `continent` / `region` / `country` / `district` → **HTTP 200** with an empty JSON array `[]`  
+  (no matching cities in the world database).
 
 
 ---
@@ -184,66 +176,33 @@ DB_USER=app
 DB_PASS=app
 ```
 
-
 ---
 
-## Project Structure
+## Project Structure – City Reports (R07–R16)
 
-| Path                                                                  | Purpose                                                                                          |
-|-----------------------------------------------------------------------|--------------------------------------------------------------------------------------------------|
-| `src/main/java/com/group13/population/App.java`                       | Javalin bootstrap / `main` entry-point; wires repo + service + routes and exposes `/health`.    |
-| `src/main/java/com/group13/population/db/Db.java`                     | MySQL JDBC helper used in tests – builds the JDBC URL and exposes `connect(..)` for experiments.|
-| `src/main/java/com/group13/population/model/Country.java`            | Domain model representing a row in the country reports (code, name, continent, region, etc.).   |
-| `src/main/java/com/group13/population/repo/CountryRepo.java`         | (Optional) repository interface describing the country report queries (R01–R06).                |
-| `src/main/java/com/group13/population/repo/WorldRepo.java`           | JDBC repository with SQL queries and mappers for the six country reports (R01–R06).             |
-| `src/main/java/com/group13/population/service/CountryService.java`   | Service layer: wraps `WorldRepo`, does light input validation, and returns report rows.         |
-| `src/main/java/com/group13/population/web/CountryRoutes.java`        | REST endpoints under `/api/countries/...` implemented with Javalin (R01–R06).                   |
-| `src/test/java/com/group13/population/db/DbTest.java`                | Unit tests for `Db` (JDBC URL formatting and failure behaviour when no server is running).      |
-| `src/test/java/com/group13/population/db/DbIT.java`                  | Integration test for `Db.connect(..)` against the real MySQL `world` database.                  |
-| `src/test/java/com/group13/population/model/CountryTest.java`        | Unit tests for the `Country` model (constructor, getters, equals/hashCode, `toString`).         |
-| `src/test/java/com/group13/population/service/CountryServiceTest.java`| Unit tests for `CountryService` covering all R01–R06 service methods.                           |
-| `src/test/java/com/group13/population/repo/WorldRepoIT.java`         | Integration tests using the real `world` schema via `WorldRepo` (ordering & filtering checks).  |
-| `src/test/java/com/group13/population/web/AppSmokeTest.java`         | Simple smoke test that starts the Javalin app on a random free port and then stops it cleanly.  |
-| `src/test/java/com/group13/population/web/CountryRoutesTest.java`    | Route tests for R01–R06 using Javalin’s test tools to call `/api/countries/...` endpoints.      |
-| `src/test/java/com/group13/population/web/CountryReportsOrderingTest.java` | Extra checks that report results are ordered by population DESC (and name as tie-break). |
-| `db/init/01-world.sql`                                               | Seed script for the MySQL `world` schema used by Docker and integration tests.                  |
-| `docs/evidence/*.csv` / `*.png`                                      | Captured outputs (CSV + screenshots) for R01–R06 used as grading evidence.                      |
-| `docs/evidence/generate-reports.ps1`                                 | Helper script to call the API and regenerate evidence files for the country reports.            |
-| `Dockerfile`                                                         | Docker build for the `world-population-report` app (packaged JAR + runtime image).              |
-| `docker-compose.yml`                                                 | Local stack: `db` (MySQL + seed) and `app` (Javalin API) services for coursework.               |
-| `pom.xml`                                                            | Maven configuration (JDK 21, unit + integration tests, JaCoCo, Checkstyle, SpotBugs, shading).  |
-| `.github/workflows/ci.yml`                                           | GitHub Actions pipeline: build, run unit & integration tests, produce coverage & QA reports.    |
-| `.github/ISSUE_TEMPLATE/*.yml`                                       | Issue templates for user stories and bug reports used in the Kanban / bug-reporting setup.      |
-| `.github/CODE_OF_CONDUCT.md` / `.github/CODEOWNERS`                  | Community standards and ownership metadata required by the coursework.                          |
+| Path                                                                 | Purpose                                                                                             |
+|----------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------|
+| `src/main/java/com/group13/population/App.java`                      | Javalin bootstrap; registers **country** and **city** routes and exposes `/health`.                |
+| `src/main/java/com/group13/population/db/Db.java`                    | MySQL JDBC helper used by repositories and integration tests.                                      |
+| `src/main/java/com/group13/population/model/City.java`              | Domain model representing a city row (name, country, district, population).                        |
+| `src/main/java/com/group13/population/model/CityRow.java`           | Lightweight projection used by JDBC to map city query results for R07–R16.                         |
+| `src/main/java/com/group13/population/repo/CityRepo.java`           | Repository interface describing the city reports (R07–R16).                                        |
+| `src/main/java/com/group13/population/repo/CityWorldRepo.java`      | JDBC implementation of `CityRepo` with SQL for world/continent/region/country/district queries.   |
+| `src/main/java/com/group13/population/service/CityService.java`     | Service layer: wraps `CityRepo`, validates inputs, returns city report rows.                       |
+| `src/main/java/com/group13/population/web/CityRoutes.java`          | REST endpoints under `/api/cities/...` implemented with Javalin (R07–R16).                         |
+| `src/test/java/com/group13/population/db/DbTest.java`               | Unit tests for `Db` (JDBC URL formatting and failure behaviour).                                   |
+| `src/test/java/com/group13/population/db/DbIT.java`                 | Integration test for `Db.connect(..)` against the real MySQL `world` database.                     |
+| `src/test/java/com/group13/population/model/CityTest.java`          | Unit tests for `City` (constructor, getters, equality, `toString`).                                |
+| `src/test/java/com/group13/population/repo/CityWorldRepoIT.java`    | Integration tests for `CityWorldRepo` using the real `world` schema (R07–R16 SQL correctness).     |
+| `src/test/java/com/group13/population/service/CityServiceTest.java` | Unit tests for `CityService` covering all R07–R16 service methods.                                 |
+| `src/test/java/com/group13/population/web/CityRoutesTest.java`      | Route tests calling `/api/cities/...` and asserting HTTP status + JSON shape.                      |
+| `src/test/java/com/group13/population/web/CityReportsOrderingTest.java` | Extra checks that city reports are ordered by population DESC (and name as a tie-break).     |
+| `src/test/java/com/group13/population/web/AppSmokeTest.java`        | Smoke test that the Javalin app starts and stops cleanly with all routes registered.               |
+| `db/init/01-world.sql`                                              | Seed script for the MySQL `world` schema used by Docker and integration tests.                     |
+| `docs/evidence/*.csv` / `*.png` (R07–R16)                           | Captured outputs (CSV + screenshots) for the city reports (Name, Country, District, Population).   |
+| `docs/evidence/generate-city-reports.ps1`                           | Helper script to call the `/api/cities/...` endpoints and regenerate evidence CSV files R07–R16.   |
+| `docs/evidence/verify-city-reports.ps1`                             | PowerShell helper that verifies R07–R16 endpoints respond correctly on port 7080.                  |
 
-
----
-
-
-## Project Structure – Capital City Reports (R17–R22)
-
-| Path                                                                 | Purpose                                                                                         |
-|----------------------------------------------------------------------|-------------------------------------------------------------------------------------------------|
-| `src/main/java/com/group13/population/App.java`                      | Javalin bootstrap; registers both **country** and **capital** routes and exposes `/health`.    |
-| `src/main/java/com/group13/population/db/Db.java`                    | MySQL JDBC helper used by repositories and integration tests.                                  |
-| `src/main/java/com/group13/population/model/CapitalCity.java`       | Domain model representing a capital city (name, country, population).                          |
-| `src/main/java/com/group13/population/repo/CapitalRepo.java`        | Repository interface describing the capital reports (R17–R22).                                 |
-| `src/main/java/com/group13/population/repo/CapitalRepoJdbc.java`    | JDBC implementation of `CapitalRepo` with SQL for R17–R22.                                     |
-| `src/main/java/com/group13/population/service/CapitalService.java`  | Service layer: wraps `CapitalRepo`, validates inputs, returns capital report rows.             |
-| `src/main/java/com/group13/population/web/CapitalRoutes.java`       | REST endpoints under `/api/capitals/...` implemented with Javalin (R17–R22).                   |
-| `src/test/java/com/group13/population/db/DbTest.java`               | Unit tests for `Db` (JDBC URL formatting and failure behaviour).                               |
-| `src/test/java/com/group13/population/db/DbIT.java`                 | Integration test for `Db.connect(..)` against the real MySQL `world` database.                 |
-| `src/test/java/com/group13/population/model/CapitalCityTest.java`   | Unit tests for `CapitalCity` (constructor, getters, equality, `toString`).                     |
-| `src/test/java/com/group13/population/repo/FakeCapitalRepo.java`    | In-memory fake implementation of `CapitalRepo` used by service and route tests.                |
-| `src/test/java/com/group13/population/repo/CapitalRepoJdbcIT.java`  | Integration tests for `CapitalRepoJdbc` using the real `world` schema.                         |
-| `src/test/java/com/group13/population/service/CapitalServiceTest.java` | Unit tests for `CapitalService` covering all R17–R22 service methods.                        |
-| `src/test/java/com/group13/population/web/CapitalRoutesTest.java`   | Route tests calling `/api/capitals/...` and asserting HTTP status + JSON body.                 |
-| `src/test/java/com/group13/population/web/CapitalReportsOrderingTest.java` | Extra checks that capital reports are ordered by population DESC (and name as tie-break). |
-| `src/test/java/com/group13/population/web/AppSmokeTest.java`        | Smoke test that the Javalin app starts and stops cleanly with all routes registered.           |
-| `db/init/01-world.sql`                                              | Seed script for the MySQL `world` schema used by Docker and integration tests.                 |
-| `docs/evidence/*.csv` / `*.png` (R17–R22)                           | Captured outputs (CSV + screenshots) for the capital city reports used as grading evidence.    |
-| `docs/evidence/generate-capital-reports.ps1`                        | Helper script to call the `/api/capitals/...` endpoints and regenerate evidence CSV files.     |
-| `verify-capital-reports.ps1`                                        | Local PowerShell helper that verifies R17–R22 endpoints respond correctly on port 7080.        |
 
 
 ---
@@ -278,7 +237,7 @@ DB_PASS=app
 
 ### Summary of the coursework functional requirements and current implementation status
 
-> **Count:** 12 / 32 requirements implemented (all **Country** reports R01–R06 and all **Capital City** reports R17–R22) → **37.5%**.
+> **Count:** 22 / 32 requirements implemented (all **Country** reports R01–R06, all **City** reports R07–R16, and all **Capital City** reports R17–R22) → **68.75%**.
 
 | ID  | Name                                                                                           |   Met   | Screenshot                                                                                                                | CSV file                                                                  |
 |-----|------------------------------------------------------------------------------------------------|:-------:|---------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------|
@@ -288,16 +247,16 @@ DB_PASS=app
 | R04 | The top N populated countries in the world where N is provided by the user.                    | ✅ Yes  | <img src="docs/evidence/R04_world_top5.png" alt="R04 screenshot" width="300" />                                          | [R04_world_top5.csv](docs/evidence/R04_world_top5.csv)                   |
 | R05 | The top N populated countries in a continent where N is provided by the user.                  | ✅ Yes  | <img src="docs/evidence/R05_continent_Asia_top5.png" alt="R05 screenshot" width="220" />                                 | [R05_continent_Asia_top5.csv](docs/evidence/R05_continent_Asia_top5.csv) |
 | R06 | The top N populated countries in a region where N is provided by the user.                     | ✅ Yes  | <img src="docs/evidence/R06_region_EasternAsia_top5.png" alt="R06 screenshot" width="220" />                             | [R06_region_EasternAsia_top5.csv](docs/evidence/R06_region_EasternAsia_top5.csv) |
-| R07 | All the cities in the world organised by largest population to smallest.                       | ❌ No   | –                                                                                                                         | –                                                                         |
-| R08 | All the cities in a continent organised by largest population to smallest.                     | ❌ No   | –                                                                                                                         | –                                                                         |
-| R09 | All the cities in a region organised by largest population to smallest.                        | ❌ No   | –                                                                                                                         | –                                                                         |
-| R10 | All the cities in a country organised by largest population to smallest.                       | ❌ No   | –                                                                                                                         | –                                                                         |
-| R11 | All the cities in a district organised by largest population to smallest.                      | ❌ No   | –                                                                                                                         | –                                                                         |
-| R12 | The top N populated cities in the world where N is provided by the user.                       | ❌ No   | –                                                                                                                         | –                                                                         |
-| R13 | The top N populated cities in a continent where N is provided by the user.                     | ❌ No   | –                                                                                                                         | –                                                                         |
-| R14 | The top N populated cities in a region where N is provided by the user.                        | ❌ No   | –                                                                                                                         | –                                                                         |
-| R15 | The top N populated cities in a country where N is provided by the user.                       | ❌ No   | –                                                                                                                         | –                                                                         |
-| R16 | The top N populated cities in a district where N is provided by the user.                      | ❌ No   | –                                                                                                                         | –                                                                         |
+| R07 | All the cities in the world organised by largest population to smallest.                       | ✅ Yes  | <img src="docs/evidence/R07_cities_world.png" alt="R07 screenshot" width="300" />                                        | [R07_cities_world.csv](docs/evidence/R07_cities_world.csv)               |
+| R08 | All the cities in a continent organised by largest population to smallest.                     | ✅ Yes  | <img src="docs/evidence/R08_cities_continent_Asia.png" alt="R08 screenshot" width="220" />                               | [R08_cities_continent_Asia.csv](docs/evidence/R08_cities_continent_Asia.csv) |
+| R09 | All the cities in a region organised by largest population to smallest.                        | ✅ Yes  | <img src="docs/evidence/R09_cities_region_EasternAsia.png" alt="R09 screenshot" width="220" />                           | [R09_cities_region_EasternAsia.csv](docs/evidence/R09_cities_region_EasternAsia.csv) |
+| R10 | All the cities in a country organised by largest population to smallest.                       | ✅ Yes  | <img src="docs/evidence/R10_cities_country_China.png" alt="R10 screenshot" width="220" />                                | [R10_cities_country_China.csv](docs/evidence/R10_cities_country_China.csv) |
+| R11 | All the cities in a district organised by largest population to smallest.                      | ✅ Yes  | <img src="docs/evidence/R11_cities_district_NewYork.png" alt="R11 screenshot" width="220" />                             | [R11_cities_district_NewYork.csv](docs/evidence/R11_cities_district_NewYork.csv) |
+| R12 | The top N populated cities in the world where N is provided by the user.                       | ✅ Yes  | <img src="docs/evidence/R12_cities_world_top5.png" alt="R12 screenshot" width="300" />                                   | [R12_cities_world_top5.csv](docs/evidence/R12_cities_world_top5.csv)     |
+| R13 | The top N populated cities in a continent where N is provided by the user.                     | ✅ Yes  | <img src="docs/evidence/R13_cities_continent_Asia_top5.png" alt="R13 screenshot" width="220" />                          | [R13_cities_continent_Asia_top5.csv](docs/evidence/R13_cities_continent_Asia_top5.csv) |
+| R14 | The top N populated cities in a region where N is provided by the user.                        | ✅ Yes  | <img src="docs/evidence/R14_cities_region_EasternAsia_top5.png" alt="R14 screenshot" width="220" />                      | [R14_cities_region_EasternAsia_top5.csv](docs/evidence/R14_cities_region_EasternAsia_top5.csv) |
+| R15 | The top N populated cities in a country where N is provided by the user.                       | ✅ Yes  | <img src="docs/evidence/R15_cities_country_China_top5.png" alt="R15 screenshot" width="220" />                           | [R15_cities_country_China_top5.csv](docs/evidence/R15_cities_country_China_top5.csv) |
+| R16 | The top N populated cities in a district where N is provided by the user.                      | ✅ Yes  | <img src="docs/evidence/R16_cities_district_NewYork_top5.png" alt="R16 screenshot" width="220" />                        | [R16_cities_district_NewYork_top5.csv](docs/evidence/R16_cities_district_NewYork_top5.csv) |
 | R17 | All the capital cities in the world organised by largest population to smallest.               | ✅ Yes  | <img src="docs/evidence/R17_world_capitals.png" alt="R17 screenshot" width="300" />                                      | [R17_world_capitals.csv](docs/evidence/R17_world_capitals.csv)           |
 | R18 | All the capital cities in a continent organised by largest population to smallest.             | ✅ Yes  | <img src="docs/evidence/R18_continent_Asia_capitals.png" alt="R18 screenshot" width="220" />                             | [R18_continent_Asia_capitals.csv](docs/evidence/R18_continent_Asia_capitals.csv) |
 | R19 | All the capital cities in a region organised by largest population to smallest.                | ✅ Yes  | <img src="docs/evidence/R19_region_EasternAsia_capitals.png" alt="R19 screenshot" width="220" />                         | [R19_region_EasternAsia_capitals.csv](docs/evidence/R19_region_EasternAsia_capitals.csv) |
@@ -314,6 +273,7 @@ DB_PASS=app
 | R30 | The population of a district.                                                                   | ❌ No   | –                                                                                                                         | –                                                                         |
 | R31 | The population of a city.                                                                       | ❌ No   | –                                                                                                                         | –                                                                         |
 | R32 | Number of people who speak Chinese, English, Hindi, Spanish, and Arabic, with world % shares. | ❌ No   | –                                                                                                                         | –                                                                         |
+
 
 
 ---
