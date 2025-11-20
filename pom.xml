@@ -154,6 +154,8 @@
         <version>${surefire.plugin.version}</version>
         <configuration>
           <useModulePath>false</useModulePath>
+          <!-- JaCoCo agent -->
+          <argLine>${argLine}</argLine>
           <includes>
             <include>**/*Test.java</include>
           </includes>
@@ -171,6 +173,8 @@
         <version>${failsafe.plugin.version}</version>
         <configuration>
           <skipITs>${skipITs}</skipITs>
+          <!-- JaCoCo agent for ITs as well -->
+          <argLine>${argLine}</argLine>
           <includes>
             <include>**/*IT.java</include>
           </includes>
@@ -192,7 +196,7 @@
         </executions>
       </plugin>
 
-      <!-- JaCoCo coverage (unit + ITs) -->
+      <!-- JaCoCo coverage (ALL app packages: web + service + model + repo + db + root) -->
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
@@ -201,23 +205,21 @@
           <skip>${jacoco.skip}</skip>
         </configuration>
         <executions>
-          <!-- attach JaCoCo agent before tests -->
+          <!-- Attach JaCoCo agent before tests -->
           <execution>
             <id>jacoco-prepare-agent</id>
             <goals>
               <goal>prepare-agent</goal>
             </goals>
             <configuration>
+              <!-- Instrument ALL production code under com.group13.population -->
               <includes>
-                <!-- instrument all production code under com.group13 -->
-                <include>com/group13/**</include>
+                <include>com/group13/population/**</include>
               </includes>
+              <!-- never count tests or IT classes -->
               <excludes>
-                <!-- never count tests or IT classes -->
                 <exclude>**/*Test*</exclude>
                 <exclude>**/*IT*</exclude>
-                <!-- exclude App main class from coverage -->
-                <exclude>com/group13/population/App.class</exclude>
               </excludes>
             </configuration>
           </execution>
@@ -229,6 +231,12 @@
             <goals>
               <goal>report</goal>
             </goals>
+            <configuration>
+              <!-- Report on ALL app packages -->
+              <includes>
+                <include>com/group13/population/**</include>
+              </includes>
+            </configuration>
           </execution>
         </executions>
       </plugin>
