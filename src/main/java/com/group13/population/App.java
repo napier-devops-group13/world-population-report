@@ -1,104 +1,132 @@
 package com.group13.population;
 
-import com.group13.population.repo.CityWorldRepo;
-import com.group13.population.service.CityService;
-import com.group13.population.web.CityRoutes;
+import com.group13.population.db.Db;
+import com.group13.population.repo.WorldRepo;
+import com.group13.population.service.CountryService;
+import com.group13.population.web.CountryRoutes;
 import io.javalin.Javalin;
+import io.javalin.config.JavalinConfig;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.util.Objects;
 import java.util.Properties;
 
-/**
- * Application entry point for the World Population reporting API.
- *
- * Supports:
- *  - R07–R16  City reports  (/api/cities/...)
- */
 public final class App {
 
-    /** Default HTTP port used when no env/config value is provided. */
-    private static final int DEFAULT_PORT = 7070;
-
     private App() {
-        // utility class – no instances
     }
 
-    /**
-     * Normal process entry point.
-     * Uses env/config/defaults to choose the port.
-     */
     public static void main(String[] args) {
-        start(-1);
-    }
-
-    /** Convenience overload for callers that don’t care about the port. */
-    public static Javalin start() {
-        return start(-1);
+        start();
     }
 
     /**
-     * Start the application and return the running Javalin instance.
-     *
-     * Port selection rules:
-     *  - overridePort > 0  → bind exactly to that port
-     *  - overridePort == 0 → “any free port” (useful for tests)
-     *  - overridePort < 0  → use env / application.properties / default
+     * Start the HTTP server using config from app.properties + environment.
      */
-    public static Javalin start(int overridePort) {
+    public static Javalin start() {
         Properties props = loadProps();
+        int port = getIntEnv("PORT", getIntProp(props, "app.port", 7070));
 
-        int configuredPort =
-            getIntEnv("PORT", getIntProp(props, "app.port", DEFAULT_PORT));
-
-        int port;
-        if (overridePort > 0) {
-            port = overridePort;
-        } else if (overridePort == 0) {
-            port = 0;        // ask OS for a free port
-        } else {
-            port = configuredPort;
-        }
-
-        // ================== CITY REPORTS (R07–R16) ===================
-        CityWorldRepo cityRepo = new CityWorldRepo();   // uses Db.connect(...) internally
-        CityService cityService = new CityService(cityRepo);
-        CityRoutes cityRoutes = new CityRoutes(cityService);
-
-        // ================= Javalin wiring ============================
-        Javalin app = Javalin.create(cfg -> cfg.showJavalinBanner = false);
-
-        // Register HTTP endpoints
-        cityRoutes.register(app);      // /api/cities/...
-        app.get("/health", ctx -> ctx.result("OK"));
-
+        Javalin app = createApp(props);
         app.start(port);
 
-        // Clean shutdown when JVM exits
+        // Graceful shutdown hook
         Runtime.getRuntime().addShutdownHook(new Thread(app::stop));
+        return app;
+    }
+
+    /**
+     * Factory used by tests and by {@link #start()}.
+     * Builds the Javalin app but does NOT call start().
+     */
+    public static Javalin createApp() {
+        Properties props = loadProps();
+        return createApp(props);
+    }
+
+    private static Javalin createApp(Properties props) {
+        // 1. Connect DB using env + properties
+        Db db = new Db();
+        connectDbFromConfig(db, props);
+
+        // 2. Wire repo → service → routes
+        WorldRepo repo = new WorldRepo(db);
+        CountryService service = new CountryService(repo);
+        CountryRoutes routes = new CountryRoutes(service);
+
+        // 3. Build Javalin instance (not started)
+        Javalin app = Javalin.create((JavalinConfig cfg) -> {
+            cfg.showJavalinBanner = false;
+        });
+
+        routes.register(app);
+        app.get("/health", ctx -> ctx.result("OK"));
 
         return app;
     }
 
-    // ---------- helpers ----------
+    /**
+     * Connect the Db using environment variables if present,
+     * otherwise fall back to app.properties.
+     *
+     * Expected properties (with defaults):
+     *   db.host=db
+     *   db.port=3306
+     *   db.startupDelay=0
+     */
+    static void connectDbFromConfig(Db db, Properties props) {
+        Objects.requireNonNull(db, "db");
+        Objects.requireNonNull(props, "props");
 
-    /** Load application.properties from the classpath if present. */
-    private static Properties loadProps() {
+        String host = System.getenv("DB_HOST");
+        if (host == null || host.isBlank()) {
+            host = props.getProperty("db.host", "localhost");
+        }
+
+        int port = getIntEnv("DB_PORT", getIntProp(props, "db.port", 3306));
+        int delay = getIntEnv("DB_STARTUP_DELAY",
+            getIntProp(props, "db.startupDelay", 0));
+
+        String location = host + ":" + port;
+        System.out.println("DEBUG: App connecting to DB at "
+            + location + " with startup delay " + delay + "ms");
+
+        try {
+            db.connect(location, delay);
+        } catch (Exception ex) {
+            // If this fails, WorldRepo will just return empty lists,
+            // but at least we see the reason in logs.
+            System.err.println("ERROR: DB connection failed: " + ex.getMessage());
+        }
+    }
+
+    // ---------------------------------------------------------------------
+    // Helper methods used by AppHelpersTest
+    // ---------------------------------------------------------------------
+
+    /** Load application properties from app.properties on the classpath. */
+    public static Properties loadProps() {
         Properties props = new Properties();
         try (InputStream in = App.class.getClassLoader()
-            .getResourceAsStream("application.properties")) {
+            .getResourceAsStream("app.properties")) {
+
             if (in != null) {
                 props.load(in);
+            } else {
+                System.err.println("WARNING: app.properties not found on classpath");
             }
-        } catch (Exception ignored) {
-            // fall back to defaults
+        } catch (IOException ex) {
+            throw new IllegalStateException("Failed to load app.properties", ex);
         }
         return props;
     }
 
-    /** Read an int from an environment variable, with a safe default. */
-    private static int getIntEnv(String name, int defaultValue) {
-        String raw = System.getenv(name);
-        if (raw == null || raw.isBlank()) {
+    /** Read an integer property with default + error handling. */
+    public static int getIntProp(Properties props, String key, int defaultValue) {
+        Objects.requireNonNull(props, "props");
+        String raw = props.getProperty(key);
+        if (raw == null || raw.trim().isEmpty()) {
             return defaultValue;
         }
         try {
@@ -108,10 +136,10 @@ public final class App {
         }
     }
 
-    /** Read an int from Properties, with a safe default. */
-    private static int getIntProp(Properties props, String key, int defaultValue) {
-        String raw = props.getProperty(key);
-        if (raw == null || raw.isBlank()) {
+    /** Read an integer environment variable with default + error handling. */
+    public static int getIntEnv(String name, int defaultValue) {
+        String raw = System.getenv(name);
+        if (raw == null || raw.trim().isEmpty()) {
             return defaultValue;
         }
         try {
