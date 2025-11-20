@@ -1,43 +1,55 @@
 package com.group13.population.db;
 
-import org.junit.jupiter.api.Test;
-
-import java.sql.SQLException;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.sql.SQLException;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
 /**
- * Unit tests for the {@link Db} helper.
- * Verifies JDBC URL formatting and behaviour when no DB server is available.
+ * Unit tests for {@link Db}.
+ *
+ * These tests focus on the basic behaviour of the Db wrapper
+ * without requiring a real MySQL instance. The "happy path"
+ * (real connection, queries, etc.) is covered by {@link DbIT}.
  */
 class DbTest {
 
-    /**
-     * buildJdbcUrl should assemble the correct JDBC URL using
-     * host, port, schema and the fixed connection parameters
-     * used by this application.
-     */
     @Test
-    void buildJdbcUrlFormatsCorrectly() {
-        String url = Db.buildJdbcUrl("localhost", 3306, "world");
+    @DisplayName("getConnection throws SQLException when not connected")
+    void getConnectionThrowsWhenNotConnected() {
+        Db db = new Db();
 
-        assertEquals(
-            "jdbc:mysql://localhost:3306/world?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC",
-            url
+        assertThrows(SQLException.class,
+            db::getConnection,
+            "Calling getConnection() before connect() should throw SQLException");
+    }
+
+    @Test
+    @DisplayName("disconnect is safe when no connection was ever opened")
+    void disconnectIsSafeWhenNeverConnected() {
+        Db db = new Db();
+
+        // Should not throw, even though we never called connect()
+        assertDoesNotThrow(
+            db::disconnect,
+            "disconnect() should be safe when no connection is open"
         );
     }
 
-    /**
-     * connect() should try to open a real JDBC connection and
-     * surface an SQLException when the server is not reachable.
-     */
     @Test
-    void connectAttemptsConnectionAndFailsWhenNoServer() {
-        // Arrange & act & assert in one step: we EXPECT an SQLException
-        // because nothing is listening on port 65530.
-        assertThrows(SQLException.class, () ->
-            Db.connect("127.0.0.1", 65530, "world", "app", "app")
+    @DisplayName("connect returns false for an obviously invalid host/port")
+    void connectReturnsFalseForInvalidLocation() {
+        Db db = new Db();
+
+        // Port 1 on localhost is almost certainly not a MySQL server.
+        boolean connected = db.connect("127.0.0.1:1", 500);
+
+        assertFalse(
+            connected,
+            "connect() to an invalid location should return false"
         );
     }
 }

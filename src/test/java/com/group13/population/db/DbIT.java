@@ -1,61 +1,89 @@
 package com.group13.population.db;
 
-import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Integration test for Db.connect against a real MySQL database.
+ * Integration tests for {@link Db} against the real MySQL {@code world} database.
  *
- * - On CI (CI=true) this test is skipped; Db.connect is exercised by other ITPs.
- * - Locally, if the DB container is not running or credentials are wrong
- *   the test is also skipped instead of failing the build.
+ * These rely on docker-compose's `db` service exposing port 43306 on the host.
  */
-class DbIT {
+public class DbIT {
 
-    private static String host() {
-        String value = System.getProperty("DB_HOST");
-        if (value == null || value.isBlank()) {
-            value = System.getenv("DB_HOST");
-        }
-        if (value == null || value.isBlank()) {
-            value = "localhost";
-        }
-        return value;
+    private static Db db;
+
+    @BeforeAll
+    @DisplayName("Connect to database before running Db integration tests")
+    static void setUp() {
+        db = new Db();
+
+        String host = getenvOrDefault("DB_HOST", "localhost");
+        String port = getenvOrDefault("DB_PORT", "43306");
+        String location = host + ":" + port;
+
+        boolean connected = db.connect(location, 30_000);
+        assertTrue(connected, "Failed to connect to database at " + location);
     }
 
-    private static int port() {
-        String raw = System.getProperty("DB_PORT");
-        if (raw == null || raw.isBlank()) {
-            raw = System.getenv("DB_PORT");
+    @AfterAll
+    static void tearDown() {
+        if (db != null) {
+            db.disconnect();
         }
-        if (raw == null || raw.isBlank()) {
-            raw = "43306";    // docker-compose host-port
-        }
-        return Integer.parseInt(raw.trim());
+    }
+
+    // -------------------------------------------------------------------------
+    // Tests
+    // -------------------------------------------------------------------------
+
+    @Test
+    @DisplayName("Db.getConnection returns a valid JDBC connection")
+    void getConnectionReturnsValidConnection() throws Exception {
+        Connection conn = db.getConnection();
+        assertNotNull(conn, "Connection should not be null");
+        assertFalse(conn.isClosed(), "Connection should be open");
     }
 
     @Test
-    void connectWithValidConfig() throws Exception {
-        Assumptions.assumeFalse(
-            "true".equalsIgnoreCase(System.getenv("CI")),
-            "Skip DbIT on CI – Db.connect is covered via other ITPs"
-        );
+    @DisplayName("Db.getConnection reuses the same connection instance while open")
+    void getConnectionCachesConnection() throws Exception {
+        Connection first = db.getConnection();
+        Connection second = db.getConnection();
 
-        final String h = host();
-        final int p = port();
+        assertSame(first, second,
+            "Db.getConnection should return the same instance while it is open");
+    }
 
-        try (Connection c = Db.connect(h, p, "world", "app", "app")) {
-            assertNotNull(c, "Connection should not be null");
-            assertFalse(c.isClosed(), "Connection should be open");
-        } catch (Exception ex) {
-            Assumptions.assumeTrue(false,
-                "Skipping DbIT – DB not reachable on " + h + ":" + p
-                    + " (" + ex.getClass().getSimpleName() + ": " + ex.getMessage() + ")");
+    @Test
+    @DisplayName("Db can execute a simple query against the world.country table")
+    void canQueryCountryTable() throws Exception {
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) FROM country");
+             ResultSet rs = ps.executeQuery()) {
+
+            assertTrue(rs.next(), "Expected one row from COUNT(*)");
+            long count = rs.getLong(1);
+            assertTrue(count > 0, "Expected at least one country row, got " + count);
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // Helpers
+    // -------------------------------------------------------------------------
+
+    private static String getenvOrDefault(String name, String defaultValue) {
+        String value = System.getenv(name);
+        if (value == null || value.isBlank()) {
+            return defaultValue;
+        }
+        return value.trim();
     }
 }
