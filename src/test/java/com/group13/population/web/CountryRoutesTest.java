@@ -26,27 +26,63 @@ class CountryRoutesTest {
     // ------------------------------------------------------------------
 
     /**
-     * Extract population values (5th column) from a CSV body.
-     * Assumes header row then data rows.
+     * Extract population values from a CSV body.
+     * Uses the header row to locate the "population" column so the test
+     * still works if the column order changes.
      */
     private List<Long> extractPopulations(String csvBody) {
         List<Long> populations = new ArrayList<>();
+
+        if (csvBody == null || csvBody.isBlank()) {
+            return populations;
+        }
+
         String[] lines = csvBody.split("\\R");
-        // skip header line
+        if (lines.length < 2) {
+            return populations; // header only or empty
+        }
+
+        // --- find index of the population column from header ---
+        String header = lines[0].trim();
+        String[] headerCols = header.split(",");
+        int popIndex = -1;
+        for (int i = 0; i < headerCols.length; i++) {
+            String colName = headerCols[i].trim().toLowerCase();
+            if (colName.contains("population")) {   // e.g. "Population"
+                popIndex = i;
+                break;
+            }
+        }
+        // fallback to 5th column if header is unexpected
+        if (popIndex == -1) {
+            popIndex = 4;
+        }
+
+        // --- read populations from data rows ---
         for (int i = 1; i < lines.length; i++) {
             String line = lines[i].trim();
             if (line.isEmpty()) {
                 continue;
             }
             String[] cols = line.split(",");
-            if (cols.length < 5) {
+            if (cols.length <= popIndex) {
                 continue;
             }
-            long pop = Long.parseLong(cols[4].trim()); // 5th column = Population
+
+            String raw = cols[popIndex].trim();
+            if (raw.isEmpty()) {
+                continue;
+            }
+
+            // remove thousands separators if present, e.g. "12,878,000"
+            String numeric = raw.replace(",", "");
+            long pop = Long.parseLong(numeric);
             populations.add(pop);
         }
+
         return populations;
     }
+
 
     private boolean isDescending(List<Long> values) {
         for (int i = 1; i < values.size(); i++) {
