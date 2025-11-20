@@ -2,69 +2,66 @@ package com.group13.population.web;
 
 import com.group13.population.App;
 import io.javalin.Javalin;
+import io.javalin.testtools.JavalinTest;
+import okhttp3.Response;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-import java.net.ServerSocket;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Smoke tests for the top-level App bootstrap.
- * These tests exercise the main port-selection branches in App.start(...).
+ * Simple smoke tests for {@link App}.
+ *
+ * <p>These tests give confidence that the application can start using
+ * {@link App#createApp()} and that the shared health-check endpoint is
+ * correctly configured.</p>
+ *
+ * <p>They deliberately only call the {@code /health} endpoint so they do
+ * not require a running database, keeping the smoke tests fast and stable.</p>
  */
-class AppSmokeTest {
+public class AppSmokeTest {
 
-    /**
-     * Basic “does it start at all?” smoke test.
-     * Uses port 0 so the OS allocates any free port – avoids clashes in CI.
-     */
     @Test
-    void appCanStartAndStopOnRandomPort() {
-        Javalin app = App.start(0);
-        try {
-            assertTrue(app.port() > 0, "Javalin should be listening on some port");
-        } finally {
-            app.stop();
-        }
+    @DisplayName("Smoke – App.createApp starts a server with /health returning OK")
+    void healthEndpointIsReachable() throws Exception {
+        // Build an un-started app instance; JavalinTest will start and stop it.
+        JavalinTest.test(App.createApp(), (server, client) -> {
+            try (Response res = client.get("/health")) {
+                assertEquals(200, res.code(), "Expected HTTP 200 from /health");
+                assertNotNull(res.body(), "Response body should not be null");
+                assertEquals("OK", res.body().string(), "Expected body 'OK' from /health");
+            }
+        });
     }
 
-    /**
-     * When a positive overridePort is supplied, App must bind to that port.
-     */
     @Test
-    void appHonoursExplicitPortOverride() throws IOException {
-        int port = findFreePort();
-        Javalin app = App.start(port);
-        try {
-            assertEquals(port, app.port(), "App.start(int) must honour overridePort");
-        } finally {
-            app.stop();
-        }
+    @DisplayName("Smoke – unknown path returns 404 (app is running and routing works)")
+    void unknownPathReturns404() throws Exception {
+        JavalinTest.test(App.createApp(), (server, client) -> {
+            try (Response res = client.get("/this-path-does-not-exist")) {
+                assertEquals(404, res.code(), "Unknown paths should return 404");
+            }
+        });
     }
 
-    /**
-     * A negative overridePort means “use configured/default port”.
-     * We only assert that the app starts and listens on a valid port.
-     */
     @Test
-    void appUsesConfiguredOrDefaultPortWhenOverrideNegative() {
-        Javalin app = App.start(-1);
+    @DisplayName("Smoke – App.start starts a real server instance which can be stopped")
+    void startStartsAndStopsServer() {
+        Javalin app = null;
         try {
-            assertTrue(app.port() > 0, "App should start on a valid TCP port");
-        } finally {
-            app.stop();
-        }
-    }
+            // This exercises App.start(), including:
+            //  - loadProps()
+            //  - getIntEnv("PORT", ...)
+            //  - getIntProp(...)
+            //  - createApp()
+            app = App.start();
 
-    /**
-     * Ask the OS for a currently free TCP port.
-     * The socket is closed immediately so App.start(...) can reuse the port.
-     */
-    private int findFreePort() throws IOException {
-        try (ServerSocket socket = new ServerSocket(0)) {
-            return socket.getLocalPort();
+            assertNotNull(app, "App.start should return a non-null Javalin instance");
+        } finally {
+            // Ensure we always stop the server so the port is freed for other tests.
+            if (app != null) {
+                app.stop();
+            }
         }
     }
 }
