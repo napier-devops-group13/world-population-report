@@ -1,29 +1,17 @@
 package com.group13.population;
 
 import com.group13.population.db.Db;
-<<<<<<< HEAD
-import com.group13.population.repo.WorldRepo;
-import com.group13.population.service.CountryService;
-import com.group13.population.web.CountryRoutes;
-=======
 import com.group13.population.repo.CapitalRepo;
 import com.group13.population.service.CapitalService;
 import com.group13.population.web.CapitalApiRoutes;
 import com.group13.population.web.CapitalRoutes;
->>>>>>> develop
 import io.javalin.Javalin;
-import io.javalin.config.JavalinConfig;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Objects;
 import java.util.Properties;
 
-<<<<<<< HEAD
-public final class App {
-
-    private App() {
-=======
 /**
  * Main entry point for the Capital City Reporting API (R17–R22).
  *
@@ -41,7 +29,6 @@ public final class App {
 
     private App() {
         // Utility class – do not instantiate.
->>>>>>> develop
     }
 
     public static void main(String[] args) {
@@ -72,24 +59,6 @@ public final class App {
         return createApp(props);
     }
 
-<<<<<<< HEAD
-    private static Javalin createApp(Properties props) {
-        // 1. Connect DB using env + properties
-        Db db = new Db();
-        connectDbFromConfig(db, props);
-
-        // 2. Wire repo → service → routes
-        WorldRepo repo = new WorldRepo(db);
-        CountryService service = new CountryService(repo);
-        CountryRoutes routes = new CountryRoutes(service);
-
-        // 3. Build Javalin instance (not started)
-        Javalin app = Javalin.create((JavalinConfig cfg) -> {
-            cfg.showJavalinBanner = false;
-        });
-
-        routes.register(app);
-=======
     /**
      * Internal factory that wires DB, repositories, services and routes.
      */
@@ -114,7 +83,6 @@ public final class App {
         capitalApiRoutes.register(app);   // CSV API endpoints
 
         // Health check
->>>>>>> develop
         app.get("/health", ctx -> ctx.result("OK"));
 
         return app;
@@ -139,15 +107,10 @@ public final class App {
         }
 
         int port = getIntEnv("DB_PORT", getIntProp(props, "db.port", 3306));
-<<<<<<< HEAD
-        int delay = getIntEnv("DB_STARTUP_DELAY",
-            getIntProp(props, "db.startupDelay", 0));
-=======
         int delay = getIntEnv(
             "DB_STARTUP_DELAY",
             getIntProp(props, "db.startupDelay", 0)
         );
->>>>>>> develop
 
         String location = host + ":" + port;
         System.out.println("DEBUG: App connecting to DB at "
@@ -156,25 +119,15 @@ public final class App {
         try {
             db.connect(location, delay);
         } catch (Exception ex) {
-<<<<<<< HEAD
-            // If this fails, WorldRepo will just return empty lists,
-            // but at least we see the reason in logs.
-            System.err.println("ERROR: DB connection failed: " + ex.getMessage());
-=======
             // If this fails, repos will just return empty lists,
             // but at least we see the reason in logs.
             System.err.println("ERROR: DB connection failed: "
                 + ex.getMessage());
->>>>>>> develop
         }
     }
 
     // ---------------------------------------------------------------------
-<<<<<<< HEAD
-    // Helper methods used by AppHelpersTest
-=======
     // Helper methods used by tests
->>>>>>> develop
     // ---------------------------------------------------------------------
 
     /** Load application properties from app.properties on the classpath. */
