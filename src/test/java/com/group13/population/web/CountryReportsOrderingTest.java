@@ -1,4 +1,4 @@
-package com.group13.population.repo;
+package com.group13.population.web;
 
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
@@ -8,26 +8,23 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 
 /**
- * Guard test to make sure the MySQL database is up for City repo tests.
+ * Guard test for the country report integration tests.
  *
- * If the database is not reachable on the configured host/port, this test will
- * be skipped (so local "mvn test" can run without Docker), but in CI where the
- * DB is running the test will pass.
+ * In CI (where MySQL is running), this asserts that the DB is reachable.
+ * Locally, if the DB is not running on the test port, the test is skipped.
  */
-public class CityRepoGuardTest {
+public class CountryReportsOrderingTest {
 
     @Test
-    void databaseIsAvailableForCityRepo() {
+    void databaseIsAvailableForCountryReports() {
         String host = getHost();
         int port = getPort();
 
         boolean reachable = isPortOpen(host, port, 2000);
         Assumptions.assumeTrue(
             reachable,
-            () -> "Failed to connect to database for CityRepoGuardTest at "
-                + host + ":" + port
+            () -> "Failed to connect to database at " + host + ":" + port
         );
-        // If reachable, the assumption passes and the test succeeds.
     }
 
     private String getHost() {
@@ -51,7 +48,7 @@ public class CityRepoGuardTest {
         if (env != null && !env.isBlank()) {
             return Integer.parseInt(env);
         }
-        return 43306; // default test DB port
+        return 43306;
     }
 
     private boolean isPortOpen(String host, int port, int timeoutMs) {

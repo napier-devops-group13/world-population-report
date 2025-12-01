@@ -1,5 +1,5 @@
-# docs/evidence/verify-city-reports.ps1
-# Compare live API output with stored CSV evidence for R07–R16 (city reports).
+# docs/evidence/verify-country-reports.ps1
+# Compare live API output with stored CSV evidence for R01–R06.
 
 param(
 # Change to http://localhost:7070/api if you run the app directly in IntelliJ
@@ -14,7 +14,7 @@ if ([string]::IsNullOrWhiteSpace($EvidenceDir)) {
   $EvidenceDir = (Get-Location).Path
 }
 
-Write-Host "=== Verifying city reports R07-R16 ==="
+Write-Host "=== Verifying country reports R01-R06 ==="
 
 function Compare-Report {
   param(
@@ -33,7 +33,6 @@ function Compare-Report {
     return
   }
 
-  # Normalise line endings and drop blank lines on both sides
   $expectedLines = (Get-Content $csvPath) -replace "`r","" | Where-Object { $_ -ne "" }
 
   try {
@@ -55,18 +54,11 @@ function Compare-Report {
   }
 }
 
-# R07–R11: all cities variants
-Compare-Report "R07" "R07_cities_world.csv"                      "/cities/world"
-Compare-Report "R08" "R08_cities_continent_Asia.csv"             "/cities/continent/Asia"
-Compare-Report "R09" "R09_cities_region_WesternEurope.csv"       "/cities/region/Western%20Europe"
-Compare-Report "R10" "R10_cities_country_UnitedKingdom.csv"      "/cities/country/United%20Kingdom"
-Compare-Report "R11" "R11_cities_district_Kabol.csv"             "/cities/district/Kabol"
-
-# R12–R16: top-N city reports
-Compare-Report "R12" "R12_cities_world_top10.csv"                "/cities/world/top?n=10"
-Compare-Report "R13" "R13_cities_continent_Europe_top5.csv"      "/cities/continent/Europe/top?n=5"
-Compare-Report "R14" "R14_cities_region_WesternEurope_top5.csv"  "/cities/region/Western%20Europe/top?n=5"
-Compare-Report "R15" "R15_cities_country_UnitedKingdom_top5.csv" "/cities/country/United%20Kingdom/top?n=5"
-Compare-Report "R16" "R16_cities_district_Kabol_top3.csv"        "/cities/district/Kabol/top?n=3"
+Compare-Report "R01" "R01_countries_world.csv"                  "/countries/world"
+Compare-Report "R02" "R02_countries_continent_Asia.csv"         "/countries/continent/Asia"
+Compare-Report "R03" "R03_countries_region_WesternEurope.csv"   "/countries/region/Western%20Europe"
+Compare-Report "R04" "R04_countries_world_top10.csv"            "/countries/world/top?n=10"
+Compare-Report "R05" "R05_countries_continent_Europe_top5.csv"  "/countries/continent/Europe/top?n=5"
+Compare-Report "R06" "R06_countries_region_WesternEurope_top3.csv" "/countries/region/Western%20Europe/top?n=3"
 
 Write-Host "=== Done ==="
