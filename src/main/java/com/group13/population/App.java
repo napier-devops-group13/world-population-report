@@ -1,10 +1,15 @@
 package com.group13.population;
 
 import com.group13.population.db.Db;
-import com.group13.population.repo.CapitalRepo;
-import com.group13.population.service.CapitalService;
-import com.group13.population.web.CapitalApiRoutes;
-import com.group13.population.web.CapitalRoutes;
+
+// City repo + service
+import com.group13.population.repo.CityRepo;
+import com.group13.population.service.CityService;
+
+// City web routes
+import com.group13.population.web.CityApiRoutes;
+import com.group13.population.web.CityRoutes;
+
 import io.javalin.Javalin;
 
 import java.io.IOException;
@@ -13,13 +18,13 @@ import java.util.Objects;
 import java.util.Properties;
 
 /**
- * Main entry point for the Capital City Reporting API (R17–R22).
+ * Main entry point for the City Reporting API.
  *
- * <p>This class is responsible for:</p>
+ * <p>This class is responsible only for:</p>
  * <ul>
  *   <li>Loading configuration.</li>
  *   <li>Connecting to the database.</li>
- *   <li>Wiring repo → service → web routes for capital reports.</li>
+ *   <li>Wiring city repo → service → web routes.</li>
  *   <li>Starting the Javalin HTTP server.</li>
  * </ul>
  *
@@ -67,20 +72,20 @@ public final class App {
         Db db = new Db();
         connectDbFromConfig(db, props);
 
-        // 2. Capital city reports (R17–R22)
-        CapitalRepo capitalRepo = new CapitalRepo(db);
-        CapitalService capitalService = new CapitalService(capitalRepo);
-        CapitalRoutes capitalRoutes = new CapitalRoutes(capitalService);
+        // 2. City reports
+        CityRepo cityRepo = new CityRepo(db);
+        CityService cityService = new CityService(cityRepo);
+        CityRoutes cityRoutes = new CityRoutes(cityService);
 
-        // CSV API routes: /api/capitals/...
-        CapitalApiRoutes capitalApiRoutes = new CapitalApiRoutes(db);
+        // CSV API routes for cities (/api/cities/…)
+        CityApiRoutes cityApiRoutes = new CityApiRoutes(db);
 
         // 3. Build Javalin instance
         Javalin app = Javalin.create(cfg -> cfg.showJavalinBanner = false);
 
-        // Register route groups
-        capitalRoutes.register(app);      // HTML / “label” reports
-        capitalApiRoutes.register(app);   // CSV API endpoints
+        // Register all route groups
+        cityRoutes.register(app);     // HTML / label endpoints
+        cityApiRoutes.register(app);  // CSV API endpoints
 
         // Health check
         app.get("/health", ctx -> ctx.result("OK"));
@@ -108,21 +113,20 @@ public final class App {
 
         int port = getIntEnv("DB_PORT", getIntProp(props, "db.port", 3306));
         int delay = getIntEnv(
-            "DB_STARTUP_DELAY",
-            getIntProp(props, "db.startupDelay", 0)
+                "DB_STARTUP_DELAY",
+                getIntProp(props, "db.startupDelay", 0)
         );
 
         String location = host + ":" + port;
         System.out.println("DEBUG: App connecting to DB at "
-            + location + " with startup delay " + delay + "ms");
+                + location + " with startup delay " + delay + "ms");
 
         try {
             db.connect(location, delay);
         } catch (Exception ex) {
             // If this fails, repos will just return empty lists,
             // but at least we see the reason in logs.
-            System.err.println("ERROR: DB connection failed: "
-                + ex.getMessage());
+            System.err.println("ERROR: DB connection failed: " + ex.getMessage());
         }
     }
 
@@ -134,7 +138,7 @@ public final class App {
     public static Properties loadProps() {
         Properties props = new Properties();
         try (InputStream in = App.class.getClassLoader()
-            .getResourceAsStream("app.properties")) {
+                .getResourceAsStream("app.properties")) {
 
             if (in != null) {
                 props.load(in);
