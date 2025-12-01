@@ -101,13 +101,18 @@ mvn test
 ```
 ---
 
+<<<<<<< HEAD
 ## API Endpoints – Countries (R01–R06)
+=======
+## API Endpoints – Capital Cities (R17–R22)
+>>>>>>> develop
 
 **Base URL:**
 
 - Local JVM (IntelliJ / `java -jar`): `http://localhost:7070/api`
 - Docker (`docker-compose up -d`): `http://localhost:7080/api`
 
+<<<<<<< HEAD
 Country report responses use the **Country report shape**:
 
 - `code` – 3-letter country code (e.g. `GBR`)
@@ -132,17 +137,38 @@ Country report responses use the **Country report shape**:
   - Example: `/countries/world/top?n=10`
   - Example: `/countries/continent/Europe/top?n=5`
   - Example: `/countries/region/Western%20Europe/top?n=3`
+=======
+All endpoints return **capital cities** with fields:
+
+- `city` (capital name)
+- `country` (country name)
+- `population` (population of the capital city)
+
+| ID  | Method | Endpoint                                       | Description                                                                                 |
+|-----|--------|-------------------------------------------------|---------------------------------------------------------------------------------------------|
+| R17 | GET    | `/capitals/world`                              | All capital cities in the world, ordered by **population DESC**.                           |
+| R18 | GET    | `/capitals/continent/{continent}`              | All capital cities in a continent, ordered by **population DESC**.                         |
+| R19 | GET    | `/capitals/region/{region}`                    | All capital cities in a region, ordered by **population DESC**.                            |
+| R20 | GET    | `/capitals/world/top/{n}`                      | Top-N capital cities in the world by population (largest → smallest).                      |
+| R21 | GET    | `/capitals/continent/{continent}/top/{n}`      | Top-N capital cities in a continent by population (largest → smallest).                    |
+| R22 | GET    | `/capitals/region/{region}/top/{n}`            | Top-N capital cities in a region by population (largest → smallest).                       |
+>>>>>>> develop
 
 **Error handling (examples):**
 
-- Missing or invalid `n` (e.g. not a number) → **HTTP 400** with plain-text message  
-  `n must be an integer`
-
-- `n <= 0` → **HTTP 400** with plain-text message  
+- `n <= 0` → **HTTP 400** with a plain-text message  
   `n must be a positive integer`
 
+<<<<<<< HEAD
 - Unknown `continent` / `region` → **HTTP 200** with an empty JSON array `[]`  
   (no matching countries in the world database).
+=======
+- Non-integer `n` → **HTTP 400** with a plain-text message  
+  `n must be an integer`
+
+- Unknown `continent` / `region` → **HTTP 200** with an empty result  
+  (no matching capital cities in the world database).
+>>>>>>> develop
 
 ---
 
@@ -173,6 +199,7 @@ DB_USER=app
 DB_PASS=app
 ```
 
+<<<<<<< HEAD
 ---
 
 ## Project Structure – Country Reports (R01–R06)
@@ -209,9 +236,42 @@ DB_PASS=app
 | `docs/evidence/generate-country-reports.ps1`                           | Helper script to call `/api/countries/...` and regenerate evidence CSV files for R01–R06.                       |
 | `docs/evidence/verify-country-reports.ps1`                             | PowerShell helper that verifies R01–R06 endpoints respond correctly and match the saved evidence (port 7080).   |
 
+=======
+>>>>>>> develop
 
 ---
 
+## Project Structure
+
+| Path                                                                  | Purpose                                                                                              |
+|-----------------------------------------------------------------------|------------------------------------------------------------------------------------------------------|
+| `src/main/java/com/group13/population/App.java`                       | Javalin bootstrap / `main` entry-point; wires DB + capital repo + service + routes and `/health`.   |
+| `src/main/java/com/group13/population/db/Db.java`                     | MySQL JDBC helper – builds the JDBC URL and exposes `connect(..)` used by the app and tests.        |
+| `src/main/java/com/group13/population/model/CapitalCityRow.java`     | Domain model for a single capital city row (city, country, population).                             |
+| `src/main/java/com/group13/population/model/CapitalCityReport.java`  | Wrapper model for a named capital report plus its list of `CapitalCityRow` results.                 |
+| `src/main/java/com/group13/population/model/CityRow.java`            | Lightweight model used for simple city name/population pairs in some capital endpoints.             |
+| `src/main/java/com/group13/population/repo/CapitalRepo.java`         | JDBC repository with SQL queries and mappers for the six capital city reports (R17–R22).            |
+| `src/main/java/com/group13/population/service/CapitalService.java`   | Service layer: wraps `CapitalRepo`, does light input validation, and returns report rows.           |
+| `src/main/java/com/group13/population/web/CapitalRoutes.java`        | HTML / table endpoints for capital reports under `/capitals/...` (R17–R22).                         |
+| `src/main/java/com/group13/population/web/CapitalApiRoutes.java`     | CSV API endpoints for capitals under `/api/capitals/...` used by the evidence scripts.              |
+| `src/test/java/com/group13/population/AppHelpersTest.java`           | Unit tests for helper methods in `App` (property loading, env parsing, etc.).                       |
+| `src/test/java/com/group13/population/db/DbTest.java`                | Unit tests for `Db` (JDBC URL formatting and behaviour when no server is running).                  |
+| `src/test/java/com/group13/population/db/DbIT.java`                  | Integration test for `Db.connect(..)` against the real MySQL `world` database.                      |
+| `src/test/java/com/group13/population/model/CapitalCityRowTest.java` | Unit tests for `CapitalCityRow` (constructor, getters, equals/hashCode, `toString`).                |
+| `src/test/java/com/group13/population/model/CapitalCityReportTest.java` | Unit tests for `CapitalCityReport` (name + list handling, derived properties).                   |
+| `src/test/java/com/group13/population/repo/CapitalRepoGuardTest.java`| Fast unit tests checking guard clauses / null handling in `CapitalRepo`.                            |
+| `src/test/java/com/group13/population/repo/CapitalRepoIT.java`       | Integration tests for `CapitalRepo` against the real DB (filters, ordering, limits for R17–R22).   |
+| `src/test/java/com/group13/population/service/CapitalServiceTest.java`| Unit tests for `CapitalService` covering all R17–R22 service methods.                               |
+| `src/test/java/com/group13/population/web/AppConfigTest.java`        | Tests for `App.createApp(..)` and DB wiring without actually starting the HTTP server.              |
+| `src/test/java/com/group13/population/web/AppSmokeTest.java`         | Smoke test that starts the Javalin app on a random port and then stops it cleanly.                  |
+| `src/test/java/com/group13/population/web/CapitalApiRoutesTest.java` | Coverage-focused tests that hit `/api/capitals/...` endpoints using Javalin’s test tools.           |
+| `src/test/java/com/group13/population/web/CapitalReportsOrderingTest.java` | Extra checks that capital report results are ordered by population DESC (and tie-breaks).     |
+| `src/test/java/com/group13/population/web/CapitalRoutesTest.java`    | Route tests for the HTML capital endpoints under `/capitals/...`.                                   |
+| `db/init/01-world.sql`                                               | Seed script for the MySQL `world` schema used by Docker and integration tests.                      |
+| `docs/evidence/R17_*.csv, R18_*.csv, ... R22_*.csv`                  | Captured CSV outputs for the six capital city reports (R17–R22).                                    |
+| `docs/evidence/R
+
+---
 
 ## Quality & CI/CD
 
@@ -242,6 +302,7 @@ DB_PASS=app
 
 ### Summary of coursework functional requirements and current implementation status
 
+<<<<<<< HEAD
 > **Count:** 6 / 32 requirements implemented so far – all **Country** reports **R01–R06**.  
 > City (R07–R16), Capital City (R17–R22), Population (R23–R31) and Language (R32) reports are planned for later iterations and will be added to this table as they are implemented.
 
@@ -279,10 +340,47 @@ DB_PASS=app
 | R30 | The population of a district.                                                                   | ❌ No  | –                                                                                                                              | –                                                                                         |
 | R31 | The population of a city.                                                                       | ❌ No  | –                                                                                                                              | –                                                                                         |
 | R32 | Number of people who speak Chinese, English, Hindi, Spanish, and Arabic, with world % shares. | ❌ No  | –                                                                                                                              | –                                                                                         |
+=======
+> **Count:** 6 / 32 requirements implemented (all **Capital City** reports **R17–R22**) → **18.75%**.
 
-
+| ID  | Name                                                                                           |   Met   | Screenshot                                                                                                                | CSV file                                                                  |
+|-----|------------------------------------------------------------------------------------------------|:-------:|---------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------|
+| R01 | All the countries in the world organised by largest population to smallest.                    | ❌ No   | –                                                                                                                         | –                                                                         |
+| R02 | All the countries in a continent organised by largest population to smallest.                  | ❌ No   | –                                                                                                                         | –                                                                         |
+| R03 | All the countries in a region organised by largest population to smallest.                     | ❌ No   | –                                                                                                                         | –                                                                         |
+| R04 | The top N populated countries in the world where N is provided by the user.                    | ❌ No   | –                                                                                                                         | –                                                                         |
+| R05 | The top N populated countries in a continent where N is provided by the user.                  | ❌ No   | –                                                                                                                         | –                                                                         |
+| R06 | The top N populated countries in a region where N is provided by the user.                     | ❌ No   | –                                                                                                                         | –                                                                         |
+| R07 | All the cities in the world organised by largest population to smallest.                       | ❌ No   | –                                                                                                                         | –                                                                         |
+| R08 | All the cities in a continent organised by largest population to smallest.                     | ❌ No   | –                                                                                                                         | –                                                                         |
+| R09 | All the cities in a region organised by largest population to smallest.                        | ❌ No   | –                                                                                                                         | –                                                                         |
+| R10 | All the cities in a country organised by largest population to smallest.                       | ❌ No   | –                                                                                                                         | –                                                                         |
+| R11 | All the cities in a district organised by largest population to smallest.                      | ❌ No   | –                                                                                                                         | –                                                                         |
+| R12 | The top N populated cities in the world where N is provided by the user.                       | ❌ No   | –                                                                                                                         | –                                                                         |
+| R13 | The top N populated cities in a continent where N is provided by the user.                     | ❌ No   | –                                                                                                                         | –                                                                         |
+| R14 | The top N populated cities in a region where N is provided by the user.                        | ❌ No   | –                                                                                                                         | –                                                                         |
+| R15 | The top N populated cities in a country where N is provided by the user.                       | ❌ No   | –                                                                                                                         | –                                                                         |
+| R16 | The top N populated cities in a district where N is provided by the user.                      | ❌ No   | –                                                                                                                         | –                                                                         |
+| R17 | All the capital cities in the world organised by largest population to smallest.               | ✅ Yes  | <img src="docs/evidence/R17_world_capitals.png" alt="R17 screenshot" width="300" />                                       | [R17_capitals_world.csv](docs/evidence/R17_capitals_world.csv)           |
+| R18 | All the capital cities in a continent organised by largest population to smallest.             | ✅ Yes  | <img src="docs/evidence/R18_capitals_continent_Europe.png" alt="R18 screenshot" width="260" />                            | [R18_capitals_continent_Europe.csv](docs/evidence/R18_capitals_continent_Europe.csv) |
+| R19 | All the capital cities in a region organised by largest population to smallest.                | ✅ Yes  | <img src="docs/evidence/R19_capitals_region_Caribbean.png" alt="R19 screenshot" width="260" />                            | [R19_capitals_region_Caribbean.csv](docs/evidence/R19_capitals_region_Caribbean.csv) |
+| R20 | The top N populated capital cities in the world where N is provided by the user.               | ✅ Yes  | <img src="docs/evidence/R20_capitals_world_top10.png" alt="R20 screenshot" width="300" />                                 | [R20_capitals_world_top10.csv](docs/evidence/R20_capitals_world_top10.csv) |
+| R21 | The top N populated capital cities in a continent where N is provided by the user.             | ✅ Yes  | <img src="docs/evidence/R21_capitals_continent_Europe_top5.png" alt="R21 screenshot" width="260" />                       | [R21_capitals_continent_Europe_top5.csv](docs/evidence/R21_capitals_continent_Europe_top5.csv) |
+| R22 | The top N populated capital cities in a region where N is provided by the user.                | ✅ Yes  | <img src="docs/evidence/R22_capitals_region_Caribbean_top3.png" alt="R22 screenshot" width="260" />                       | [R22_capitals_region_Caribbean_top3.csv](docs/evidence/R22_capitals_region_Caribbean_top3.csv) |
+| R23 | Population of people, in cities and not in cities, for each continent.                         | ❌ No   | –                                                                                                                         | –                                                                         |
+| R24 | Population of people, in cities and not in cities, for each region.                            | ❌ No   | –                                                                                                                         | –                                                                         |
+| R25 | Population of people, in cities and not in cities, for each country.                           | ❌ No   | –                                                                                                                         | –                                                                         |
+| R26 | The population of the world.                                                                    | ❌ No   | –                                                                                                                         | –                                                                         |
+| R27 | The population of a continent.                                                                  | ❌ No   | –                                                                                                                         | –                                                                         |
+| R28 | The population of a region.                                                                     | ❌ No   | –                                                                                                                         | –                                                                         |
+| R29 | The population of a country.                                                                    | ❌ No   | –                                                                                                                         | –                                                                         |
+| R30 | The population of a district.                                                                   | ❌ No   | –                                                                                                                         | –                                                                         |
+| R31 | The population of a city.                                                                       | ❌ No   | –                                                                                                                         | –                                                                         |
+| R32 | Number of people who speak Chinese, English, Hindi, Spanish, and Arabic, with world % shares. | ❌ No   | –                                                                                                                         | –                                                                         |
+>>>>>>> develop
 
 ---
+
 ## Assessment Evidence (CR1 / CR2 / Final)
 
 ### CR1 — Checklist
