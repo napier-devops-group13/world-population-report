@@ -1,8 +1,8 @@
-# docs/evidence/verify-country-reports.ps1
-# Compare live API output with stored CSV evidence for R01–R06.
+# docs/evidence/verify-capital-reports.ps1
+# Compare live API output with stored CSV evidence for R17–R22 (capital reports).
 
 param(
-# Change to http://localhost:7070/api if you run the app directly in IntelliJ
+# Use http://localhost:7070/api if running from IntelliJ instead of Docker
   [string]$ApiBase = "http://localhost:7080/api"
 )
 
@@ -10,11 +10,11 @@ $ErrorActionPreference = "Stop"
 
 # Folder where this script lives (...\world-population-report\docs\evidence)
 $EvidenceDir = $PSScriptRoot
-if ([string]::IsNullOrWhiteSpace($EvidenceDir)) {
+if (-not $EvidenceDir) {
   $EvidenceDir = (Get-Location).Path
 }
 
-Write-Host "=== Verifying country reports R01-R06 ==="
+Write-Host "=== Verifying capital reports R17-R22 ==="
 
 function Compare-Report {
   param(
@@ -33,6 +33,7 @@ function Compare-Report {
     return
   }
 
+  # Normalise line endings and drop blank lines
   $expectedLines = (Get-Content $csvPath) -replace "`r","" | Where-Object { $_ -ne "" }
 
   try {
@@ -54,11 +55,12 @@ function Compare-Report {
   }
 }
 
-Compare-Report "R01" "R01_countries_world.csv"                  "/countries/world"
-Compare-Report "R02" "R02_countries_continent_Asia.csv"         "/countries/continent/Asia"
-Compare-Report "R03" "R03_countries_region_WesternEurope.csv"   "/countries/region/Western%20Europe"
-Compare-Report "R04" "R04_countries_world_top10.csv"            "/countries/world/top?n=10"
-Compare-Report "R05" "R05_countries_continent_Europe_top5.csv"  "/countries/continent/Europe/top?n=5"
-Compare-Report "R06" "R06_countries_region_WesternEurope_top3.csv" "/countries/region/Western%20Europe/top?n=3"
+# R17-R22 checks (must match generate-capital-reports.ps1)
+Compare-Report "R17" "R17_capitals_world.csv"                     "/capitals/world"
+Compare-Report "R18" "R18_capitals_continent_Europe.csv"          "/capitals/continent/Europe"
+Compare-Report "R19" "R19_capitals_region_Caribbean.csv"          "/capitals/region/Caribbean"
+Compare-Report "R20" "R20_capitals_world_top10.csv"               "/capitals/world/top/10"
+Compare-Report "R21" "R21_capitals_continent_Europe_top5.csv"     "/capitals/continent/Europe/top/5"
+Compare-Report "R22" "R22_capitals_region_Caribbean_top3.csv"     "/capitals/region/Caribbean/top/3"
 
 Write-Host "=== Done ==="
