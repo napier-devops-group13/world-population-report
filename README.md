@@ -101,48 +101,39 @@ mvn test
 ```
 ---
 
-## API Endpoints – Countries (R01–R06)
+## API Endpoints – Population in / out of cities (R24–R26)
 
-**Base URL:**
+**Base URL (Reports):**
 
-- Local JVM (IntelliJ / `java -jar`): `http://localhost:7070/api`
-- Docker (`docker-compose up -d`): `http://localhost:7080/api`
+- Local JVM (IntelliJ / `java -jar`): `http://localhost:7070/reports`
+- Docker (`docker-compose up -d`): `http://localhost:7080/reports`
 
-All endpoints return **countries** with fields:
+All endpoints return **population report rows** with fields:
 
-- `code` (country code)
-- `name` (country name)
-- `continent`
-- `region`
-- `population`
-- `capital`
+- `name` – region / country name, or `World`
+- `total_population` – total population for that region / country / world
+- `in_cities` – number of people living in cities
+- `not_in_cities` – number of people not living in cities
+- `percent_in_cities` – percentage of people living in cities
+- `percent_not_in_cities` – percentage of people not living in cities
 
 > All responses are CSV files with a header row  
-> `Code,Name,Continent,Region,Population,Capital`  
-> and are sorted by **population DESC**.
+> `Name,TotalPopulation,InCities,NotInCities,PercentInCities,PercentNotInCities`  
+> and are sorted by **total_population DESC**.
 
-| ID  | Method | Endpoint                                         | Description                                                                 |
-|-----|--------|--------------------------------------------------|-----------------------------------------------------------------------------|
-| R01 | GET    | `/countries/world`                              | All countries in the world, ordered by **population DESC**.                |
-| R02 | GET    | `/countries/continent/{continent}`              | All countries in a continent, ordered by **population DESC**.              |
-| R03 | GET    | `/countries/region/{region}`                    | All countries in a region, ordered by **population DESC**.                 |
-| R04 | GET    | `/countries/world/top?n={n}`                    | Top-`n` countries in the world by population (largest → smallest).         |
-| R05 | GET    | `/countries/continent/{continent}/top?n={n}`    | Top-`n` countries in a continent by population (largest → smallest).       |
-| R06 | GET    | `/countries/region/{region}/top?n={n}`          | Top-`n` countries in a region by population (largest → smallest).          |
+| ID  | Method | Endpoint                     | Description                                                                                             |
+|-----|--------|------------------------------|---------------------------------------------------------------------------------------------------------|
+| R24 | GET    | `/population/regions`        | Population living **in / not in cities** for each **region**, including totals and percentages.        |
+| R25 | GET    | `/population/countries`      | Population living **in / not in cities** for each **country**, including totals and percentages.       |
+| R26 | GET    | `/population/world`          | **World** population: people living in cities vs not in cities, totals and percentages (single row).   |
 
-**Notes on `n` (Top-N endpoints):**
+**Notes:**
 
-- `n` is passed as a **query parameter**, for example:  
-  `/countries/world/top?n=10`
-- `n` must be a **positive integer**.
-- If `n` is missing, not a number, or `n <= 0`, the API returns **HTTP 400 (Bad Request)**.
-
-**Other behaviour:**
-
-- If the `continent` / `region` value does not match any data in the database,  
-  the API returns **HTTP 200** with just the CSV header and no data rows.
-- These endpoints are used by the evidence script  
-  `docs/evidence/generate-country-reports.ps1` to create the R01–R06 CSV files.
+- These endpoints are **read-only** and do not take any parameters.
+- They correspond directly to functional requirements **R24–R26** in the coursework.
+- The evidence scripts use them as follows:
+  - `docs/evidence/generate-population-reports.ps1` – downloads R24–R26 CSV files.
+  - `docs/evidence/verify-population-reports.ps1` – compares the CSV files with live API output.
 
 ---
 
@@ -177,36 +168,39 @@ DB_PASS=app
 
 ---
 
-## Project Structure – Country Reports (R01–R06)
+## Project Structure – Population Reports (R24–R26)
 
-| Path                                                                  | Purpose                                                                                                   |
-|-----------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------|
-| `src/main/java/com/group13/population/App.java`                       | Javalin bootstrap / `main` entry point; wires DB + `WorldRepo` + `CountryService` + `CountryRoutes` and exposes `/health`. |
-| `src/main/java/com/group13/population/db/Db.java`                     | MySQL JDBC helper – builds the JDBC URL and exposes `connect(..)` used by the app and integration tests. |
-| `src/main/java/com/group13/population/model/CountryRow.java`         | Domain model for a single country row (code, name, continent, region, population, capital).              |
-| `src/main/java/com/group13/population/model/CountryReport.java`      | Wrapper model for a named country report plus its list of `CountryRow` results.                          |
-| `src/main/java/com/group13/population/repo/WorldRepo.java`           | JDBC repository with SQL queries and mappers for the six country reports (R01–R06).                      |
-| `src/main/java/com/group13/population/service/CountryService.java`   | Service layer: wraps `WorldRepo`, applies light validation, and returns ordered country rows.            |
-| `src/main/java/com/group13/population/web/CountryRoutes.java`        | CSV API endpoints for country reports under `/api/countries/...` (used by the evidence scripts for R01–R06). |
-| `src/test/java/com/group13/population/AppHelpersTest.java`           | Unit tests for helper methods in `App` (property loading, environment parsing, etc.).                    |
-| `src/test/java/com/group13/population/db/DbTest.java`                | Unit tests for `Db` (JDBC URL formatting and behaviour when no MySQL server is running).                 |
-| `src/test/java/com/group13/population/db/DbIT.java`                  | Integration test for `Db.connect(..)` against the real MySQL `world` database (Docker on port 43306).    |
-| `src/test/java/com/group13/population/model/CountryRowTest.java`     | Unit tests for `CountryRow` (constructor, getters, equality, `toString`).                                |
-| `src/test/java/com/group13/population/model/CountryReportTest.java`  | Unit tests for `CountryReport` (name, list handling, and derived properties).                            |
-| `src/test/java/com/group13/population/repo/WorldRepoGuardTest.java`  | Fast unit tests checking guard clauses / null handling for `WorldRepo`.                                  |
-| `src/test/java/com/group13/population/repo/WorldRepoIT.java`         | Integration tests for `WorldRepo` against the real DB (filters, ordering, limits for R01–R06).          |
-| `src/test/java/com/group13/population/service/CountryServiceTest.java` | Unit tests for `CountryService` covering all six country service methods.                              |
-| `src/test/java/com/group13/population/web/AppConfigTest.java`        | Tests for the web app configuration (wiring DB + repo + service + routes) without starting a real server. |
-| `src/test/java/com/group13/population/web/AppSmokeTest.java`         | Smoke test that starts the Javalin app on a random port and then shuts it down cleanly.                  |
-| `src/test/java/com/group13/population/web/CountryReportsOrderingTest.java` | Extra checks that all country report results are ordered by population DESC for R01–R06.           |
-| `src/test/java/com/group13/population/web/CountryRoutesTest.java`    | Route tests for `/api/countries/...` including validation of the `n` query parameter for top-N reports.  |
-| `db/init/01-world.sql`                                               | Seed script for the MySQL `world` schema used by Docker and by the integration tests.                    |
-| `docs/evidence/generate-country-reports.ps1`                         | PowerShell script that calls `/api/countries/...` and saves CSV evidence files for R01–R06.              |
-| `docs/evidence/verify-country-reports.ps1`                           | Script that re-runs the country APIs to quickly re-check that R01–R06 still work as expected.            |
-| `docs/evidence/R01_*.csv … R06_*.csv`                                | Captured CSV outputs for the six country reports (world / continent / region and top-N variants).        |
-| `docs/evidence/R01_*.png … R06_*.png`                                | Screenshot evidence for each country report CSV, used in the coursework submission.                      |
+| Path                                                                  | Purpose                                                                                                             |
+|-----------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------|
+| `src/main/java/com/group13/population/App.java`                       | Javalin bootstrap / `main` entry point; wires `Db` + `PopulationRepo` + `PopulationService` + `PopulationRoutes`, exposes `/health` and `/reports/...` endpoints. |
+| `src/main/java/com/group13/population/db/Db.java`                     | MySQL JDBC helper – reads env vars, builds the JDBC URL, and exposes `connect(..)` / `getConnection()` used by the app and integration tests. |
+| `src/main/java/com/group13/population/model/PopulationRow.java`      | Domain model for a single population report row (name, total population, in / not in cities, percentages).        |
+| `src/main/java/com/group13/population/repo/PopulationRepo.java`      | JDBC repository with SQL queries and mappers for the three population reports **R24–R26** (regions, countries, world). |
+| `src/main/java/com/group13/population/service/PopulationService.java`| Service layer: wraps `PopulationRepo`, applies light validation / transformation, and returns ordered population rows for R24–R26. |
+| `src/main/java/com/group13/population/web/PopulationRoutes.java`     | CSV API endpoints for population reports under `/reports/population/...` (used by the evidence scripts for R24–R26). |
+| `src/test/java/com/group13/population/AppHelpersTest.java`           | Unit tests for helper methods in `App` (property loading, environment parsing, startup delay handling, etc.).      |
+| `src/test/java/com/group13/population/db/DbTest.java`                | Unit tests for `Db` (JDBC URL formatting, behaviour when no MySQL server is running, and reconnect logic).        |
+| `src/test/java/com/group13/population/db/DbIT.java`                  | Integration test for `Db.connect(..)` against the real MySQL `world` database (Docker `world-db` on port 43306).  |
+| `src/test/java/com/group13/population/model/PopulationRowTest.java`  | Unit tests for `PopulationRow` (factory methods, totals, and percentage calculations).                             |
+| `src/test/java/com/group13/population/repo/PopulationRepoTest.java`  | Core unit tests for `PopulationRepo` using stub data, checking correct SQL mapping, ordering and totals for R24–R26. |
+| `src/test/java/com/group13/population/repo/PopulationRepoGuardTest.java` | Guard tests ensuring `PopulationRepo` returns empty results / 0 when `Db.getConnection()` fails or is `null` (no crash). |
+| `src/test/java/com/group13/population/repo/PopulationRepoNoRowsTest.java` | Tests behaviour when the underlying queries return **no rows** (CSV header only, counts stay at zero).           |
+| `src/test/java/com/group13/population/repo/PopulationRepoEdgeCaseTest.java` | Extra edge-case checks for rounding of percentages, large populations and other boundary conditions.          |
+| `src/test/java/com/group13/population/repo/PopulationRepoIT.java`    | Integration tests for `PopulationRepo` against the real DB (regions / countries / world queries for R24–R26).     |
+| `src/test/java/com/group13/population/service/PopulationServiceTest.java` | Unit tests for `PopulationService` covering all three population service methods and their mapping to the repo. |
+| `src/test/java/com/group13/population/web/AppConfigTest.java`        | Tests for web app configuration (wiring `Db` + repo + service + routes) without starting a full HTTP server.      |
+| `src/test/java/com/group13/population/web/AppSmokeTest.java`         | Smoke test that starts the Javalin app on a random port, hits basic endpoints, and then shuts it down cleanly.    |
+| `src/test/java/com/group13/population/web/PopulationRoutesTest.java` | Route tests for `/reports/population/...` including the CSV header / row structure and helper methods.            |
+| `db/init/01-world.sql`                                               | Seed script for the MySQL `world` schema used by Docker and all integration tests (including R24–R26).            |
+| `docs/evidence/generate-population-reports.ps1`                      | PowerShell script that calls `/reports/population/...` and saves CSV evidence files for **R24–R26**.              |
+| `docs/evidence/verify-population-reports.ps1`                        | Script that re-runs the population APIs and compares them with the CSV files to confirm R24–R26 still match.      |
+| `docs/evidence/R24_population_regions.csv`                           | Captured CSV output for **R24** – population in / not in cities by region.                                         |
+| `docs/evidence/R25_population_countries.csv`                         | Captured CSV output for **R25** – population in / not in cities by country.                                        |
+| `docs/evidence/R26_population_world.csv`                             | Captured CSV output for **R26** – world population in / not in cities (single summary row).                        |
+| `docs/evidence/R24_*.png … R26_*.png`                                | Screenshot evidence for each population report CSV, used in the coursework submission.                             |
 
 ---
+
 
 
 
@@ -239,7 +233,8 @@ DB_PASS=app
 
 ### Summary of the coursework functional requirements and current implementation status
 
-> **Count:** 6 / 32 requirements implemented (all **Country** reports **R01–R06**) → **18.75%**.
+> **Count:** 9 / 32 requirements implemented  
+> → 6 **Country** reports **R01–R06** + 3 **Population** reports **R24–R26** → **28.13%**.
 
 | ID  | Name                                                                                           | Met   | Screenshot                                                                                                                   | CSV file                                                                                  |
 |-----|------------------------------------------------------------------------------------------------|:-----:|------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------|
@@ -266,9 +261,9 @@ DB_PASS=app
 | R21 | The top N populated capital cities in a continent where N is provided by the user.             | ❌ No  | –                                                                                                                            | –                                                                                         |
 | R22 | The top N populated capital cities in a region where N is provided by the user.                | ❌ No  | –                                                                                                                            | –                                                                                         |
 | R23 | Population of people, in cities and not in cities, for each continent.                         | ❌ No  | –                                                                                                                            | –                                                                                         |
-| R24 | Population of people, in cities and not in cities, for each region.                            | ❌ No  | –                                                                                                                            | –                                                                                         |
-| R25 | Population of people, in cities and not in cities, for each country.                           | ❌ No  | –                                                                                                                            | –                                                                                         |
-| R26 | The population of the world.                                                                   | ❌ No  | –                                                                                                                            | –                                                                                         |
+| R24 | Population of people, in cities and not in cities, for each region.                            | ✅ Yes | <img src="docs/evidence/R24_population_regions.png" alt="R24 screenshot" width="300" />                                      | [R24_population_regions.csv](docs/evidence/R24_population_regions.csv)                   |
+| R25 | Population of people, in cities and not in cities, for each country.                           | ✅ Yes | <img src="docs/evidence/R25_population_countries.png" alt="R25 screenshot" width="300" />                                    | [R25_population_countries.csv](docs/evidence/R25_population_countries.csv)               |
+| R26 | The population of the world.                                                                   | ✅ Yes | <img src="docs/evidence/R26_population_world.png" alt="R26 screenshot" width="300" />                                        | [R26_population_world.csv](docs/evidence/R26_population_world.csv)                       |
 | R27 | The population of a continent.                                                                 | ❌ No  | –                                                                                                                            | –                                                                                         |
 | R28 | The population of a region.                                                                    | ❌ No  | –                                                                                                                            | –                                                                                         |
 | R29 | The population of a country.                                                                   | ❌ No  | –                                                                                                                            | –                                                                                         |

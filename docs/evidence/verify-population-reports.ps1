@@ -1,9 +1,13 @@
-# docs/evidence/verify-country-reports.ps1
-# Compare live API output with stored CSV evidence for R01–R06.
+# docs/evidence/verify-population-reports.ps1
+# Compare live API output with stored CSV evidence for R24–R26.
+#
+# Default base URL assumes the population routes are mounted at:
+#   http://localhost:7080/reports/population/...
+# If you mount them under /api instead, run with:
+#   .\verify-population-reports.ps1 -ApiBase "http://localhost:7080/api"
 
 param(
-# Change to http://localhost:7070/api if you run the app directly in IntelliJ
-  [string]$ApiBase = "http://localhost:7080/api"
+  [string]$ApiBase = "http://localhost:7080"
 )
 
 $ErrorActionPreference = "Stop"
@@ -14,7 +18,7 @@ if ([string]::IsNullOrWhiteSpace($EvidenceDir)) {
   $EvidenceDir = (Get-Location).Path
 }
 
-Write-Host "=== Verifying country reports R01-R06 ==="
+Write-Host "=== Verifying population reports R24-R26 ==="
 
 function Compare-Report {
   param(
@@ -33,6 +37,7 @@ function Compare-Report {
     return
   }
 
+  # Normalise line endings and drop blank lines
   $expectedLines = (Get-Content $csvPath) -replace "`r","" | Where-Object { $_ -ne "" }
 
   try {
@@ -54,11 +59,13 @@ function Compare-Report {
   }
 }
 
-Compare-Report "R01" "R01_countries_world.csv"                  "/countries/world"
-Compare-Report "R02" "R02_countries_continent_Asia.csv"         "/countries/continent/Asia"
-Compare-Report "R03" "R03_countries_region_WesternEurope.csv"   "/countries/region/Western%20Europe"
-Compare-Report "R04" "R04_countries_world_top10.csv"            "/countries/world/top?n=10"
-Compare-Report "R05" "R05_countries_continent_Europe_top5.csv"  "/countries/continent/Europe/top?n=5"
-Compare-Report "R06" "R06_countries_region_WesternEurope_top3.csv" "/countries/region/Western%20Europe/top?n=3"
+# R24 – Population in / out of cities for each region.
+Compare-Report "R24" "R24_population_regions.csv"   "/reports/population/regions"
+
+# R25 – Population in / out of cities for each country.
+Compare-Report "R25" "R25_population_countries.csv" "/reports/population/countries"
+
+# R26 – Population of the world.
+Compare-Report "R26" "R26_population_world.csv"    "/reports/population/world"
 
 Write-Host "=== Done ==="
