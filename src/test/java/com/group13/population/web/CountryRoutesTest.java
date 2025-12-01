@@ -28,6 +28,38 @@ class CountryRoutesTest {
     // ------------------------------------------------------------------
 
     /**
+     * Split a single CSV line into columns, respecting quotes and
+     * doubled quotes ("") inside a field.
+     */
+    private List<String> splitCsvLine(String line) {
+        List<String> cols = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        boolean inQuotes = false;
+
+        for (int i = 0; i < line.length(); i++) {
+            char c = line.charAt(i);
+
+            if (c == '"') {
+                // Handle doubled quotes inside a quoted field: ""
+                if (inQuotes && i + 1 < line.length() && line.charAt(i + 1) == '"') {
+                    current.append('"');
+                    i++; // skip second quote
+                } else {
+                    inQuotes = !inQuotes;
+                }
+            } else if (c == ',' && !inQuotes) {
+                cols.add(current.toString());
+                current.setLength(0);
+            } else {
+                current.append(c);
+            }
+        }
+
+        cols.add(current.toString());
+        return cols;
+    }
+
+    /**
      * Extract population values (5th column) from a CSV body.
      * Assumes header row then data rows.
      */
@@ -40,11 +72,18 @@ class CountryRoutesTest {
             if (line.isEmpty()) {
                 continue;
             }
-            String[] cols = line.split(",");
-            if (cols.length < 5) {
+
+            List<String> cols = splitCsvLine(line);
+            if (cols.size() < 5) {
                 continue;
             }
-            long pop = Long.parseLong(cols[4].trim()); // 5th column = Population
+
+            String popText = cols.get(4).trim(); // 5th column = Population
+            if (popText.isEmpty()) {
+                continue;
+            }
+
+            long pop = Long.parseLong(popText);
             populations.add(pop);
         }
         return populations;
