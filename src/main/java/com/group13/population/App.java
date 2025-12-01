@@ -1,13 +1,9 @@
 package com.group13.population;
 
 import com.group13.population.db.Db;
-
-// Country repo + service
-import com.group13.population.repo.WorldRepo;
-import com.group13.population.service.CountryService;
-
-// Country web routes
-import com.group13.population.web.CountryRoutes;
+import com.group13.population.repo.PopulationRepo;
+import com.group13.population.service.PopulationService;
+import com.group13.population.web.PopulationRoutes;
 
 import io.javalin.Javalin;
 
@@ -17,13 +13,13 @@ import java.util.Objects;
 import java.util.Properties;
 
 /**
- * Main entry point for the Country Reporting API (R01–R06).
+ * Main entry point for the Population Reporting API (R24–R26).
  *
  * <p>This class is responsible only for:</p>
  * <ul>
  *   <li>Loading configuration.</li>
  *   <li>Connecting to the database.</li>
- *   <li>Wiring country repo → service → web routes.</li>
+ *   <li>Wiring population repo → service → web routes.</li>
  *   <li>Starting the Javalin HTTP server.</li>
  * </ul>
  *
@@ -71,16 +67,16 @@ public final class App {
         Db db = new Db();
         connectDbFromConfig(db, props);
 
-        // 2. Country reports (R01–R06)
-        WorldRepo worldRepo = new WorldRepo(db);
-        CountryService countryService = new CountryService(worldRepo);
-        CountryRoutes countryRoutes = new CountryRoutes(countryService);
+        // 2. Population reports (R24–R26)
+        PopulationRepo populationRepo = new PopulationRepo(db);
+        PopulationService populationService = new PopulationService(populationRepo);
+        PopulationRoutes populationRoutes = new PopulationRoutes(populationService);
 
         // 3. Build Javalin instance
         Javalin app = Javalin.create(cfg -> cfg.showJavalinBanner = false);
 
-        // Register route group for HTML/label endpoints
-        countryRoutes.register(app);
+        // Register population routes
+        populationRoutes.register(app);
 
         // Simple health check
         app.get("/health", ctx -> ctx.result("OK"));
