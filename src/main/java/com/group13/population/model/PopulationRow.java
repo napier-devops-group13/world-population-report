@@ -48,8 +48,14 @@ public class PopulationRow {
             nonCityPct = (nonCity * 100.0) / totalPopulation;
         }
 
-        return new PopulationRow(name, totalPopulation, cityPopulation,
-            nonCity, cityPct, nonCityPct);
+        return new PopulationRow(
+            name,
+            totalPopulation,
+            cityPopulation,
+            nonCity,
+            cityPct,
+            nonCityPct
+        );
     }
 
     public String getName() {
@@ -74,5 +80,19 @@ public class PopulationRow {
 
     public double getNonCityPopulationPercent() {
         return nonCityPopulationPercent;
+    }
+
+    // -------------------------------------------------------------------------
+    // Compatibility getters used by repo/tests (living / not living in cities)
+    // -------------------------------------------------------------------------
+
+    /** Alias for city population – people living in cities. */
+    public long getLivingInCities() {
+        return cityPopulation;
+    }
+
+    /** Alias for non-city population – people not living in cities. */
+    public long getNotLivingInCities() {
+        return nonCityPopulation;
     }
 }

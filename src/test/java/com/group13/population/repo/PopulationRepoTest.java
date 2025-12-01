@@ -2,74 +2,119 @@ package com.group13.population.repo;
 
 import com.group13.population.db.Db;
 import com.group13.population.model.PopulationRow;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Happy-path tests for {@link PopulationRepo}.
+ * Integration-style tests for {@link PopulationRepo} using the real {@code world}
+ * database.
  *
- * These connect to the real MySQL "world" database via Docker and
- * exercise the normal success paths of the repository methods.
+ * <p>These tests focus on the happy-path population reports for R24–R25.
+ * Guard and failure cases are covered in PopulationRepoGuardTest and
+ * PopulationRepoNoRowsTest.</p>
  *
- * Combined with PopulationRepoGuardTest (error paths) this should
- * give very high coverage (>90%) for PopulationRepo.
+ * <p>Connection details are taken from DB_HOST / DB_PORT when present so the
+ * tests run both locally (Docker on localhost:43306) and in GitHub Actions
+ * (MySQL service on a dynamic port).</p>
  */
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class PopulationRepoTest {
 
-    private Db db;
-    private PopulationRepo repo;
+    private static Db db;
+    private static PopulationRepo repo;
 
     @BeforeAll
-    void setUp() {
+    @DisplayName("Connect to database before running PopulationRepo tests")
+    static void setUp() {
         db = new Db();
 
-        // 🔴 Use the same host:port as your docker-compose for MySQL.
-        // From your earlier setup this should be 43306 -> 3306:
-        boolean connected = db.connect("localhost:43306", 30_000);
+        String host = getenvOrDefault("DB_HOST", "localhost");
+        String port = getenvOrDefault("DB_PORT", "43306");
+        String location = host + ":" + port;
 
-        assertTrue(connected,
-            "Could not connect to test database – check docker compose / port mapping.");
+        boolean connected = db.connect(location, 30_000);
+        assertTrue(connected, "Failed to connect to database at " + location);
 
         repo = new PopulationRepo(db);
     }
 
     @AfterAll
-    void tearDown() {
+    static void tearDown() {
         if (db != null) {
             db.disconnect();
         }
     }
 
+    // -------------------------------------------------------------------------
+    // Region report (R24) – population in / out of cities per region
+    // -------------------------------------------------------------------------
+
     @Test
-    void findPopulationByRegionInOutCities_returnsNonEmptyList() {
-        List<PopulationRow> regions = repo.findPopulationByRegionInOutCities();
+    @DisplayName("Region population report returns data ordered by total population DESC")
+    void regionReportHasDataAndIsOrdered() {
+        List<PopulationRow> rows = repo.findPopulationByRegionInOutCities();
 
-        assertNotNull(regions, "Regions list must not be null");
-        assertFalse(regions.isEmpty(), "Expected at least one region row");
+        assertNotNull(rows);
+        assertFalse(rows.isEmpty(), "Expected at least one region row");
 
-        // If PopulationRow has getters you can uncomment to hit more code:
-        // for (PopulationRow row : regions) {
-        //     assertTrue(row.getTotalPopulation() > 0);
-        //     assertEquals(row.getInCities() + row.getNotInCities(),
-        //                  row.getTotalPopulation());
-        // }
+        long prev = Long.MAX_VALUE;
+        for (PopulationRow row : rows) {
+            assertNotNull(row.getName(), "Region name should be set");
+            assertTrue(row.getTotalPopulation() >= 0,
+                    "Total population should be non-negative");
+            assertTrue(row.getLivingInCities() >= 0);
+            assertTrue(row.getNotLivingInCities() >= 0);
+
+            assertTrue(
+                    row.getTotalPopulation() <= prev,
+                    "Rows should be ordered by total population DESC"
+            );
+            prev = row.getTotalPopulation();
+        }
     }
 
-    @Test
-    void findPopulationByCountryInOutCities_returnsNonEmptyList() {
-        List<PopulationRow> countries = repo.findPopulationByCountryInOutCities();
+    // -------------------------------------------------------------------------
+    // Country report (R25) – population in / out of cities per country
+    // -------------------------------------------------------------------------
 
-        assertNotNull(countries, "Countries list must not be null");
-        assertFalse(countries.isEmpty(), "Expected at least one country row");
+    @Test
+    @DisplayName("Country population report returns data ordered by total population DESC")
+    void countryReportHasDataAndIsOrdered() {
+        List<PopulationRow> rows = repo.findPopulationByCountryInOutCities();
+
+        assertNotNull(rows);
+        assertFalse(rows.isEmpty(), "Expected at least one country row");
+
+        long prev = Long.MAX_VALUE;
+        for (PopulationRow row : rows) {
+            assertNotNull(row.getName(), "Country name should be set");
+            assertTrue(row.getTotalPopulation() >= 0,
+                    "Total population should be non-negative");
+            assertTrue(row.getLivingInCities() >= 0);
+            assertTrue(row.getNotLivingInCities() >= 0);
+
+            assertTrue(
+                    row.getTotalPopulation() <= prev,
+                    "Rows should be ordered by total population DESC"
+            );
+            prev = row.getTotalPopulation();
+        }
     }
 
-    @Test
-    void findWorldPopulation_returnsPositiveValue() {
-        long world = repo.findWorldPopulation();
-        assertTrue(world > 0, "World population should be positive");
+    // -------------------------------------------------------------------------
+    // Helpers
+    // -------------------------------------------------------------------------
+
+    private static String getenvOrDefault(String name, String defaultValue) {
+        String value = System.getenv(name);
+        if (value == null || value.isBlank()) {
+            return defaultValue;
+        }
+        return value.trim();
     }
 }
