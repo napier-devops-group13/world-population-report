@@ -101,39 +101,63 @@ mvn test
 ```
 ---
 
-## API Endpoints – Population in / out of cities (R24–R26)
+## API Endpoints – Population Lookup & Languages (R27–R32)
 
 **Base URL (Reports):**
 
 - Local JVM (IntelliJ / `java -jar`): `http://localhost:7070/reports`
 - Docker (`docker-compose up -d`): `http://localhost:7080/reports`
 
-All endpoints return **population report rows** with fields:
+There are two families of endpoints:
 
-- `name` – region / country name, or `World`
-- `total_population` – total population for that region / country / world
-- `in_cities` – number of people living in cities
-- `not_in_cities` – number of people not living in cities
-- `percent_in_cities` – percentage of people living in cities
-- `percent_not_in_cities` – percentage of people not living in cities
+1. **Lookup reports (R27–R31)** – return a **single row** with:
 
-> All responses are CSV files with a header row  
-> `Name,TotalPopulation,InCities,NotInCities,PercentInCities,PercentNotInCities`  
-> and are sorted by **total_population DESC**.
+  - `Name` – continent / region / country / district / city
+  - `Population` – total population for that place
 
-| ID  | Method | Endpoint                     | Description                                                                                             |
-|-----|--------|------------------------------|---------------------------------------------------------------------------------------------------------|
-| R24 | GET    | `/population/regions`        | Population living **in / not in cities** for each **region**, including totals and percentages.        |
-| R25 | GET    | `/population/countries`      | Population living **in / not in cities** for each **country**, including totals and percentages.       |
-| R26 | GET    | `/population/world`          | **World** population: people living in cities vs not in cities, totals and percentages (single row).   |
+   > CSV header: `Name,Population`  
+   > The row is omitted if the name is not found.
+
+2. **Language report (R32)** – returns one row per language with:
+
+  - `Language` – language name (Chinese, English, Hindi, Spanish, Arabic)
+  - `Speakers` – number of speakers calculated from the `world` database
+  - `WorldPopulationPercent` – percentage of world population speaking that language
+
+   > CSV header: `Language,Speakers,WorldPopulationPercent`  
+   > Rows are sorted by **Speakers DESC**.
+
+### Path-parameter endpoints
+
+| ID  | Method | Endpoint                                | Description                                        |
+|-----|--------|-----------------------------------------|----------------------------------------------------|
+| R27 | GET    | `/population/continents/{continent}`    | Population of a **continent** (e.g. `Asia`).       |
+| R28 | GET    | `/population/regions/{region}`          | Population of a **region** (e.g. `Caribbean`).     |
+| R29 | GET    | `/population/countries/{country}`       | Population of a **country** (e.g. `Myanmar`).      |
+| R30 | GET    | `/population/districts/{district}`      | Population of a **district** (e.g. `Rangoon [Yangon]`). |
+| R31 | GET    | `/population/cities/{city}`             | Population of a **city** (e.g. `Rangoon (Yangon)`). |
+| R32 | GET    | `/population/languages`                 | Speaker counts and world % for key **languages**.  |
+
+### Query-parameter aliases (used by scripts)
+
+For the first five lookups there are convenience aliases that use a `name` query parameter:
+
+| ID  | Method | Endpoint                          | Example                                            |
+|-----|--------|-----------------------------------|----------------------------------------------------|
+| R27 | GET    | `/population/continent?name=...`  | `/population/continent?name=Asia`                  |
+| R28 | GET    | `/population/region?name=...`     | `/population/region?name=Caribbean`                |
+| R29 | GET    | `/population/country?name=...`    | `/population/country?name=Myanmar`                 |
+| R30 | GET    | `/population/district?name=...`   | `/population/district?name=Rangoon%20%5BYangon%5D` |
+| R31 | GET    | `/population/city?name=...`       | `/population/city?name=Rangoon%20%28Yangon%29`     |
 
 **Notes:**
 
-- These endpoints are **read-only** and do not take any parameters.
-- They correspond directly to functional requirements **R24–R26** in the coursework.
+- All endpoints are **read-only**.
+- Missing or blank `name` values are handled safely and return an `"unknown …"` row with population `0`.
+- These endpoints implement functional requirements **R27–R32**.
 - The evidence scripts use them as follows:
-  - `docs/evidence/generate-population-reports.ps1` – downloads R24–R26 CSV files.
-  - `docs/evidence/verify-population-reports.ps1` – compares the CSV files with live API output.
+  - `docs/evidence/generate-population-lookup-reports.ps1` – downloads R27–R32 CSV files.
+  - `docs/evidence/verify-population-lookup-reports.ps1` – compares the CSV files with live API output.
 
 ---
 
@@ -168,38 +192,33 @@ DB_PASS=app
 
 ---
 
-## Project Structure – Population Reports (R24–R26)
+## Project Structure – Population Lookup & Language Reports (R27–R32)
 
-| Path                                                                  | Purpose                                                                                                             |
-|-----------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------|
-| `src/main/java/com/group13/population/App.java`                       | Javalin bootstrap / `main` entry point; wires `Db` + `PopulationRepo` + `PopulationService` + `PopulationRoutes`, exposes `/health` and `/reports/...` endpoints. |
-| `src/main/java/com/group13/population/db/Db.java`                     | MySQL JDBC helper – reads env vars, builds the JDBC URL, and exposes `connect(..)` / `getConnection()` used by the app and integration tests. |
-| `src/main/java/com/group13/population/model/PopulationRow.java`      | Domain model for a single population report row (name, total population, in / not in cities, percentages).        |
-| `src/main/java/com/group13/population/repo/PopulationRepo.java`      | JDBC repository with SQL queries and mappers for the three population reports **R24–R26** (regions, countries, world). |
-| `src/main/java/com/group13/population/service/PopulationService.java`| Service layer: wraps `PopulationRepo`, applies light validation / transformation, and returns ordered population rows for R24–R26. |
-| `src/main/java/com/group13/population/web/PopulationRoutes.java`     | CSV API endpoints for population reports under `/reports/population/...` (used by the evidence scripts for R24–R26). |
-| `src/test/java/com/group13/population/AppHelpersTest.java`           | Unit tests for helper methods in `App` (property loading, environment parsing, startup delay handling, etc.).      |
-| `src/test/java/com/group13/population/db/DbTest.java`                | Unit tests for `Db` (JDBC URL formatting, behaviour when no MySQL server is running, and reconnect logic).        |
-| `src/test/java/com/group13/population/db/DbIT.java`                  | Integration test for `Db.connect(..)` against the real MySQL `world` database (Docker `world-db` on port 43306).  |
-| `src/test/java/com/group13/population/model/PopulationRowTest.java`  | Unit tests for `PopulationRow` (factory methods, totals, and percentage calculations).                             |
-| `src/test/java/com/group13/population/repo/PopulationRepoTest.java`  | Core unit tests for `PopulationRepo` using stub data, checking correct SQL mapping, ordering and totals for R24–R26. |
-| `src/test/java/com/group13/population/repo/PopulationRepoGuardTest.java` | Guard tests ensuring `PopulationRepo` returns empty results / 0 when `Db.getConnection()` fails or is `null` (no crash). |
-| `src/test/java/com/group13/population/repo/PopulationRepoNoRowsTest.java` | Tests behaviour when the underlying queries return **no rows** (CSV header only, counts stay at zero).           |
-| `src/test/java/com/group13/population/repo/PopulationRepoEdgeCaseTest.java` | Extra edge-case checks for rounding of percentages, large populations and other boundary conditions.          |
-| `src/test/java/com/group13/population/repo/PopulationRepoIT.java`    | Integration tests for `PopulationRepo` against the real DB (regions / countries / world queries for R24–R26).     |
-| `src/test/java/com/group13/population/service/PopulationServiceTest.java` | Unit tests for `PopulationService` covering all three population service methods and their mapping to the repo. |
-| `src/test/java/com/group13/population/web/AppConfigTest.java`        | Tests for web app configuration (wiring `Db` + repo + service + routes) without starting a full HTTP server.      |
-| `src/test/java/com/group13/population/web/AppSmokeTest.java`         | Smoke test that starts the Javalin app on a random port, hits basic endpoints, and then shuts it down cleanly.    |
-| `src/test/java/com/group13/population/web/PopulationRoutesTest.java` | Route tests for `/reports/population/...` including the CSV header / row structure and helper methods.            |
-| `db/init/01-world.sql`                                               | Seed script for the MySQL `world` schema used by Docker and all integration tests (including R24–R26).            |
-| `docs/evidence/generate-population-reports.ps1`                      | PowerShell script that calls `/reports/population/...` and saves CSV evidence files for **R24–R26**.              |
-| `docs/evidence/verify-population-reports.ps1`                        | Script that re-runs the population APIs and compares them with the CSV files to confirm R24–R26 still match.      |
-| `docs/evidence/R24_population_regions.csv`                           | Captured CSV output for **R24** – population in / not in cities by region.                                         |
-| `docs/evidence/R25_population_countries.csv`                         | Captured CSV output for **R25** – population in / not in cities by country.                                        |
-| `docs/evidence/R26_population_world.csv`                             | Captured CSV output for **R26** – world population in / not in cities (single summary row).                        |
-| `docs/evidence/R24_*.png … R26_*.png`                                | Screenshot evidence for each population report CSV, used in the coursework submission.                             |
+| Path                                                                              | Purpose                                                                                                                                                                      |
+|-----------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `src/main/java/com/group13/population/model/PopulationLookupRow.java`            | Simple domain model for lookup reports **R27–R31** – holds `name` and `population` with factory helpers (e.g. `of(..)`) used by repo, service and routes.                    |
+| `src/main/java/com/group13/population/model/LanguagePopulationRow.java`          | Domain model for **R32** language statistics – stores `language`, `speakers` and `worldPopulationPercent`; includes `fromWorldTotal(..)` helper used by the repository.     |
+| `src/main/java/com/group13/population/repo/PopulationRepo.java`                  | JDBC repository now extended to support **R27–R32**: `findWorldPopulation`, `findContinentPopulation`, `findRegionPopulation`, `findCountryPopulation`, `findDistrictPopulation`, `findCityPopulation` and `findLanguagePopulations`. Uses safe fallbacks when the DB is unavailable. |
+| `src/main/java/com/group13/population/service/PopulationService.java`            | Service layer that wraps `PopulationRepo` and exposes methods for all lookup + language reports: `getWorldPopulation()`, `getContinentPopulation(..)`, `getRegionPopulation(..)`, `getCountryPopulation(..)`, `getDistrictPopulation(..)`, `getCityPopulation(..)` and `getLanguagePopulations()`. |
+| `src/main/java/com/group13/population/web/PopulationRoutes.java`                 | Javalin routes for **R27–R32** under `/reports/population/...` (continents, regions, countries, districts, cities and languages). Contains CSV builders for lookup and language reports used by the PowerShell evidence scripts. |
+| `src/test/java/com/group13/population/model/PopulationLookupRowTest.java`        | Unit tests for `PopulationLookupRow` covering construction, getters and equality, ensuring it behaves correctly in lookup reports.                                           |
+| `src/test/java/com/group13/population/model/LanguagePopulationRowTest.java`      | Unit tests for `LanguagePopulationRow`, especially the `fromWorldTotal(..)` helper and percentage rounding used in **R32**.                                                 |
+| `src/test/java/com/group13/population/repo/PopulationRepoLookupAndLanguageTest.java` | Focused tests for `PopulationRepo` lookup + language methods – verifies SQL mapping and that continent / region / country / district / city and language rows are calculated correctly. |
+| `src/test/java/com/group13/population/repo/PopulationRepoNoRowsTest.java`        | Ensures that when lookup queries return **no rows**, the repo still returns safe objects or empty lists (header-only CSV with zero counts).                                 |
+| `src/test/java/com/group13/population/repo/PopulationRepoGuardTest.java`         | Guard tests for lookup and language methods: checks behaviour when `Db.getConnection()` throws or returns `null`, and when names are missing (e.g. “unknown continent”).    |
+| `src/test/java/com/group13/population/web/PopulationRoutesTest.java`             | Route + helper tests for **R24–R32**, including `buildLookupCsv(..)` and `buildLanguageCsv(..)`, plus HTTP tests that all lookup endpoints return CSV with the correct headers and rows. |
+| `docs/evidence/generate-population-lookup-reports.ps1`                           | PowerShell script that calls `/reports/population/continents/...`, `/regions/...`, `/countries/...`, `/districts/...`, `/cities/...` and `/languages` and saves CSV files for **R27–R32**. |
+| `docs/evidence/verify-population-lookup-reports.ps1`                             | Verification script that re-runs the lookup + language APIs and compares them with the stored CSV evidence to ensure **R27–R32** still produce the expected results.        |
+| `docs/evidence/R27_population_continent_Asia.csv`                                | Captured CSV output for **R27** – population of the continent *Asia*.                                                                                                       |
+| `docs/evidence/R28_population_region_Caribbean.csv`                              | Captured CSV output for **R28** – population of the region *Caribbean*.                                                                                                     |
+| `docs/evidence/R29_population_country_Myanmar.csv`                               | Captured CSV output for **R29** – population of the country *Myanmar*.                                                                                                      |
+| `docs/evidence/R30_population_district_Rangoon.csv`                              | Captured CSV output for **R30** – total population of the district *Rangoon [Yangon]*.                                                                                      |
+| `docs/evidence/R31_population_city_Rangoon_Yangon.csv`                           | Captured CSV output for **R31** – population of the city *Rangoon (Yangon)* (summing duplicate city names if needed).                                                      |
+| `docs/evidence/R32_language_populations.csv`                                     | Captured CSV output for **R32** – Chinese, English, Hindi, Spanish and Arabic speaker counts plus percentage of world population.                                          |
+| `docs/evidence/R27_*.png … R32_*.png`                                            | Screenshot evidence for each lookup / language CSV (R27–R32), used in the coursework submission and linked from the functional-requirements table.                         |
 
 ---
+
 
 
 
@@ -233,8 +252,8 @@ DB_PASS=app
 
 ### Summary of the coursework functional requirements and current implementation status
 
-> **Count:** 9 / 32 requirements implemented  
-> → 6 **Country** reports **R01–R06** + 3 **Population** reports **R24–R26** → **28.13%**.
+> **Count:** 15 / 32 requirements implemented  
+> → 6 **Country** reports **R01–R06** + 9 **Population / Lookup / Language** reports **R24–R32** → **46.88%**.
 
 | ID  | Name                                                                                           | Met   | Screenshot                                                                                                                   | CSV file                                                                                  |
 |-----|------------------------------------------------------------------------------------------------|:-----:|------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------|
@@ -264,12 +283,12 @@ DB_PASS=app
 | R24 | Population of people, in cities and not in cities, for each region.                            | ✅ Yes | <img src="docs/evidence/R24_population_regions.png" alt="R24 screenshot" width="300" />                                      | [R24_population_regions.csv](docs/evidence/R24_population_regions.csv)                   |
 | R25 | Population of people, in cities and not in cities, for each country.                           | ✅ Yes | <img src="docs/evidence/R25_population_countries.png" alt="R25 screenshot" width="300" />                                    | [R25_population_countries.csv](docs/evidence/R25_population_countries.csv)               |
 | R26 | The population of the world.                                                                   | ✅ Yes | <img src="docs/evidence/R26_population_world.png" alt="R26 screenshot" width="300" />                                        | [R26_population_world.csv](docs/evidence/R26_population_world.csv)                       |
-| R27 | The population of a continent.                                                                 | ❌ No  | –                                                                                                                            | –                                                                                         |
-| R28 | The population of a region.                                                                    | ❌ No  | –                                                                                                                            | –                                                                                         |
-| R29 | The population of a country.                                                                   | ❌ No  | –                                                                                                                            | –                                                                                         |
-| R30 | The population of a district.                                                                  | ❌ No  | –                                                                                                                            | –                                                                                         |
-| R31 | The population of a city.                                                                      | ❌ No  | –                                                                                                                            | –                                                                                         |
-| R32 | Number of people who speak Chinese, English, Hindi, Spanish, and Arabic, with world % shares. | ❌ No  | –                                                                                                                            | –                                                                                         |
+| R27 | The population of a continent.                                                                 | ✅ Yes | <img src="docs/evidence/R27_population_continent_Asia.png" alt="R27 screenshot" width="300" />                               | [R27_population_continent_Asia.csv](docs/evidence/R27_population_continent_Asia.csv)     |
+| R28 | The population of a region.                                                                    | ✅ Yes | <img src="docs/evidence/R28_population_region_Caribbean.png" alt="R28 screenshot" width="300" />                             | [R28_population_region_Caribbean.csv](docs/evidence/R28_population_region_Caribbean.csv) |
+| R29 | The population of a country.                                                                   | ✅ Yes | <img src="docs/evidence/R29_population_country_Myanmar.png" alt="R29 screenshot" width="300" />                              | [R29_population_country_Myanmar.csv](docs/evidence/R29_population_country_Myanmar.csv)   |
+| R30 | The population of a district.                                                                  | ✅ Yes | <img src="docs/evidence/R30_population_district_Rangoon.png" alt="R30 screenshot" width="300" />                             | [R30_population_district_Rangoon.csv](docs/evidence/R30_population_district_Rangoon.csv) |
+| R31 | The population of a city.                                                                      | ✅ Yes | <img src="docs/evidence/R31_population_city_Rangoon_Yangon.png" alt="R31 screenshot" width="300" />                          | [R31_population_city_Rangoon_Yangon.csv](docs/evidence/R31_population_city_Rangoon_Yangon.csv) |
+| R32 | Number of people who speak Chinese, English, Hindi, Spanish, and Arabic, with world % shares. | ✅ Yes | <img src="docs/evidence/R32_language_populations.png" alt="R32 screenshot" width="300" />                                    | [R32_language_populations.csv](docs/evidence/R32_language_populations.csv)               |
 
 ---
 

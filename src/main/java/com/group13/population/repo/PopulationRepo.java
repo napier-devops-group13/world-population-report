@@ -1,6 +1,8 @@
 package com.group13.population.repo;
 
 import com.group13.population.db.Db;
+import com.group13.population.model.LanguagePopulationRow;
+import com.group13.population.model.PopulationLookupRow;
 import com.group13.population.model.PopulationRow;
 
 import java.sql.Connection;
@@ -20,6 +22,12 @@ import java.util.Objects;
  *   <li>R24 – population in/out of cities for each region.</li>
  *   <li>R25 – population in/out of cities for each country.</li>
  *   <li>R26 – population of the world.</li>
+ *   <li>R27 – population of a continent.</li>
+ *   <li>R28 – population of a region.</li>
+ *   <li>R29 – population of a country.</li>
+ *   <li>R30 – population of a district.</li>
+ *   <li>R31 – population of a city.</li>
+ *   <li>R32 – language populations + % of world (Chinese, English, Hindi, Spanish, Arabic).</li>
  * </ul>
  */
 public class PopulationRepo {
@@ -80,7 +88,7 @@ public class PopulationRepo {
     }
 
     // ---------------------------------------------------------------------
-    // R26 – The population of the world
+    // R26 – The population of the world (numeric only)
     // ---------------------------------------------------------------------
 
     public long findWorldPopulation() {
@@ -109,6 +117,189 @@ public class PopulationRepo {
         }
 
         return 0L;
+    }
+
+    // ---------------------------------------------------------------------
+    // R27 – The population of a continent
+    // ---------------------------------------------------------------------
+
+    /**
+     * Return the population of a single continent as a lookup row.
+     *
+     * @param continent Continent name exactly as stored in the database.
+     */
+    public PopulationLookupRow findContinentPopulation(final String continent) {
+        if (continent == null || continent.isBlank()) {
+            return PopulationLookupRow.of("unknown continent", 0L);
+        }
+
+        final String sql = """
+            SELECT SUM(Population) AS Population
+            FROM country
+            WHERE Continent = ?
+            """;
+
+        return runSingleLookup(continent, sql, continent);
+    }
+
+    // ---------------------------------------------------------------------
+    // R28 – The population of a region
+    // ---------------------------------------------------------------------
+
+    /**
+     * Return the population of a single region as a lookup row.
+     *
+     * @param region Region name exactly as stored in the database.
+     */
+    public PopulationLookupRow findRegionPopulation(final String region) {
+        if (region == null || region.isBlank()) {
+            return PopulationLookupRow.of("unknown region", 0L);
+        }
+
+        final String sql = """
+            SELECT SUM(Population) AS Population
+            FROM country
+            WHERE Region = ?
+            """;
+
+        return runSingleLookup(region, sql, region);
+    }
+
+    // ---------------------------------------------------------------------
+    // R29 – The population of a country
+    // ---------------------------------------------------------------------
+
+    /**
+     * Return the population of a single country as a lookup row.
+     *
+     * <p>Lookup is by country name (e.g. "Myanmar").</p>
+     */
+    public PopulationLookupRow findCountryPopulation(final String countryName) {
+        if (countryName == null || countryName.isBlank()) {
+            return PopulationLookupRow.of("unknown country", 0L);
+        }
+
+        final String sql = """
+            SELECT Population AS Population
+            FROM country
+            WHERE Name = ?
+            """;
+
+        return runSingleLookup(countryName, sql, countryName);
+    }
+
+// ---------------------------------------------------------------------
+// R30 – The population of a district
+// ---------------------------------------------------------------------
+
+    /**
+     * Return the total population of a district (sum of all cities in that district).
+     *
+     * Uses a prefix match so "Rangoon" will match "Rangoon [Yangon]" in the world DB.
+     */
+    public PopulationLookupRow findDistrictPopulation(final String district) {
+        if (district == null || district.isBlank()) {
+            return PopulationLookupRow.of("unknown district", 0L);
+        }
+
+        final String sql = """
+        SELECT SUM(Population) AS Population
+        FROM city
+        WHERE District LIKE ?
+        """;
+
+        // "Rangoon" -> "Rangoon%" so it matches "Rangoon [Yangon]"
+        String pattern = district + "%";
+
+        return runSingleLookup(district, sql, pattern);
+    }
+
+// ---------------------------------------------------------------------
+// R31 – The population of a city
+// ---------------------------------------------------------------------
+
+    /**
+     * Return the population of a city.
+     *
+     * Uses a substring match so "Yangon" will match "Rangoon (Yangon)".
+     */
+    public PopulationLookupRow findCityPopulation(final String cityName) {
+        if (cityName == null || cityName.isBlank()) {
+            return PopulationLookupRow.of("unknown city", 0L);
+        }
+
+        final String sql = """
+        SELECT SUM(Population) AS Population
+        FROM city
+        WHERE Name LIKE ?
+        """;
+
+        // "Yangon" -> "%Yangon%" so it matches "Rangoon (Yangon)"
+        String pattern = "%" + cityName + "%";
+
+        return runSingleLookup(cityName, sql, pattern);
+    }
+
+
+    // ---------------------------------------------------------------------
+    // R32 – Language populations and % of world
+    // ---------------------------------------------------------------------
+
+    /**
+     * Returns language population statistics for:
+     * Chinese, English, Hindi, Spanish, and Arabic.
+     *
+     * Speakers are calculated using the classic world database:
+     *   SUM(country.Population * countrylanguage.Percentage / 100)
+     *
+     * The percentage of world population is then calculated based on R26.
+     */
+    public List<LanguagePopulationRow> findLanguagePopulations() {
+        final long worldPopulation = findWorldPopulation();
+
+        final String sql = """
+            SELECT
+                cl.Language AS Language,
+                SUM(c.Population * cl.Percentage / 100) AS Speakers
+            FROM countrylanguage cl
+            JOIN country c ON c.Code = cl.CountryCode
+            WHERE cl.Language IN ('Chinese', 'English', 'Hindi', 'Spanish', 'Arabic')
+            GROUP BY cl.Language
+            ORDER BY Speakers DESC
+            """;
+
+        final Connection conn;
+        try {
+            conn = db.getConnection();
+        } catch (SQLException ex) {
+            System.err.println("PopulationRepo getConnection failed (R32): " + ex.getMessage());
+            return Collections.emptyList();
+        }
+
+        if (conn == null) {
+            return Collections.emptyList();
+        }
+
+        final List<LanguagePopulationRow> rows = new ArrayList<>();
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next()) {
+                final String language = rs.getString("Language");
+                final long speakers = rs.getLong("Speakers");
+
+                rows.add(LanguagePopulationRow.fromWorldTotal(
+                    language,
+                    speakers,
+                    worldPopulation
+                ));
+            }
+        } catch (SQLException ex) {
+            System.err.println("PopulationRepo query failed (R32): " + ex.getMessage());
+        }
+
+        return rows;
     }
 
     // ---------------------------------------------------------------------
@@ -151,6 +342,45 @@ public class PopulationRepo {
         }
 
         return rows;
+    }
+
+    /**
+     * Execute a lookup query that returns a single row with a column
+     * aliased as "Population", then wrap it in a PopulationLookupRow.
+     */
+    private PopulationLookupRow runSingleLookup(final String logicalName,
+                                                final String sql,
+                                                final Object... params) {
+        final Connection conn;
+
+        try {
+            conn = db.getConnection();
+        } catch (SQLException ex) {
+            System.err.println("PopulationRepo getConnection failed (lookup): " + ex.getMessage());
+            return PopulationLookupRow.of(logicalName, 0L);
+        }
+
+        if (conn == null) {
+            return PopulationLookupRow.of(logicalName, 0L);
+        }
+
+        long population = 0L;
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            for (int i = 0; i < params.length; i++) {
+                stmt.setObject(i + 1, params[i]);
+            }
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    population = rs.getLong("Population");
+                }
+            }
+        } catch (SQLException ex) {
+            System.err.println("PopulationRepo lookup query failed: " + ex.getMessage());
+        }
+
+        return PopulationLookupRow.of(logicalName, population);
     }
 
     /**
