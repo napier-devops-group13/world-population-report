@@ -4,7 +4,6 @@ import com.group13.population.db.Db;
 import com.group13.population.repo.PopulationRepo;
 import com.group13.population.service.PopulationService;
 import com.group13.population.web.PopulationRoutes;
-
 import io.javalin.Javalin;
 
 import java.io.IOException;
@@ -13,7 +12,7 @@ import java.util.Objects;
 import java.util.Properties;
 
 /**
- * Main entry point for the Population Reporting API (R24–R26).
+ * Main entry point for the Population Reporting API (R24–R32).
  *
  * <p>This class is responsible only for:</p>
  * <ul>
@@ -67,7 +66,7 @@ public final class App {
         Db db = new Db();
         connectDbFromConfig(db, props);
 
-        // 2. Population reports (R24–R26)
+        // 2. Population reports (R24–R32)
         PopulationRepo populationRepo = new PopulationRepo(db);
         PopulationService populationService = new PopulationService(populationRepo);
         PopulationRoutes populationRoutes = new PopulationRoutes(populationService);
@@ -104,14 +103,14 @@ public final class App {
 
         int port = getIntEnv("DB_PORT", getIntProp(props, "db.port", 3306));
         int delay = getIntEnv(
-                "DB_STARTUP_DELAY",
-                getIntProp(props, "db.startupDelay", 0)
+            "DB_STARTUP_DELAY",
+            getIntProp(props, "db.startupDelay", 0)
         );
 
         String location = host + ":" + port;
         System.out.println(
-                "DEBUG: App connecting to DB at " + location
-                        + " with startup delay " + delay + "ms"
+            "DEBUG: App connecting to DB at " + location
+                + " with startup delay " + delay + "ms"
         );
 
         try {
@@ -131,7 +130,7 @@ public final class App {
     public static Properties loadProps() {
         Properties props = new Properties();
         try (InputStream in = App.class.getClassLoader()
-                .getResourceAsStream("app.properties")) {
+            .getResourceAsStream("app.properties")) {
 
             if (in != null) {
                 props.load(in);
