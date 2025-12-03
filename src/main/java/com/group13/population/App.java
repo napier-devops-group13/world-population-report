@@ -78,10 +78,10 @@ public final class App {
         connectDbFromConfig(db, props);
 
         // 2. Repositories
-        WorldRepo worldRepo         = new WorldRepo(db);
-        CityRepo cityRepo           = new CityRepo(db);
-        CapitalRepo capitalRepo     = new CapitalRepo(db);
-        PopulationRepo populationRepo = new PopulationRepo(db);
+        WorldRepo worldRepo             = new WorldRepo(db);
+        CityRepo cityRepo               = new CityRepo(db);
+        CapitalRepo capitalRepo         = new CapitalRepo(db);
+        PopulationRepo populationRepo   = new PopulationRepo(db);
 
         // 3. Services
         CountryService countryService       = new CountryService(worldRepo);
@@ -93,24 +93,14 @@ public final class App {
         Javalin app = Javalin.create(cfg -> cfg.showJavalinBanner = false);
 
         // 5. API routes that query the DB directly (CityApiRoutes / CapitalApiRoutes)
-        //    NOTE: these expect a Db, not a Service.
         new CityApiRoutes(db).register(app);
         new CapitalApiRoutes(db).register(app);
-        // (If you later add CountryApiRoutes / PopulationApiRoutes, register them here too.)
 
         // 6. CSV report routes (R01–R32)
-
-        // Countries R01–R06  -> /api/countries/...
-        new CountryRoutes(countryService).register(app);
-
-        // Cities R07–R16     -> /reports/cities/...
-        CityRoutes.register(app, cityService);
-
-        // Capitals R17–R22   -> /reports/capitals/...
-        CapitalRoutes.register(app, capitalService);
-
-        // Population R23–R32 -> /reports/population/...
-        new PopulationRoutes(populationService).register(app);
+        new CountryRoutes(countryService).register(app);          // R01–R06
+        CityRoutes.register(app, cityService);                    // R07–R16
+        CapitalRoutes.register(app, capitalService);              // R17–R22
+        new PopulationRoutes(populationService).register(app);    // R23–R32
 
         // 7. Simple health check
         app.get("/health", ctx -> ctx.result("OK"));
@@ -119,40 +109,63 @@ public final class App {
     }
 
     /**
-     * Connect the Db using environment variables if present,
-     * otherwise fall back to app.properties.
+     * Connect the Db using properties if present, otherwise fall back
+     * to environment variables and then to sensible defaults.
      *
-     * Expected properties (with defaults):
-     *   db.host=db
-     *   db.port=3306
-     *   db.startupDelay=0
+     * Expected property keys:
+     *   db.host          – DB hostname (e.g. db, localhost)
+     *   db.port          – DB port (e.g. 3306)
+     *   db.startupDelay  – optional delay in ms before first attempt
      */
     static void connectDbFromConfig(Db db, Properties props) {
         Objects.requireNonNull(db, "db");
         Objects.requireNonNull(props, "props");
 
-        String host = System.getenv("DB_HOST");
+        // -------------------------
+        // Host: properties → env → default
+        // -------------------------
+        String host = props.getProperty("db.host");
         if (host == null || host.isBlank()) {
-            host = props.getProperty("db.host", "localhost");
+            host = System.getenv("DB_HOST");
+        }
+        if (host == null || host.isBlank()) {
+            host = "127.0.0.1";
         }
 
-        int port = getIntEnv("DB_PORT", getIntProp(props, "db.port", 3306));
-        int delay = getIntEnv(
-            "DB_STARTUP_DELAY",
-            getIntProp(props, "db.startupDelay", 0)
+        // -------------------------
+        // Port: properties → env → default 3306
+        // -------------------------
+        int port = getIntProp(props, "db.port", -1);
+        if (port <= 0) {
+            port = getIntEnv("DB_PORT", 3306);
+            if (port <= 0) {
+                port = 3306;
+            }
+        }
+
+        // -------------------------
+        // Delay: property → env → 0
+        // -------------------------
+        int delay = getIntProp(
+            props,
+            "db.startupDelay",
+            getIntEnv("DB_STARTUP_DELAY", 0)
         );
+        if (delay < 0) {
+            delay = 0;
+        }
 
         String location = host + ":" + port;
-        System.out.println(
-            "DEBUG: App connecting to DB at " + location
-                + " with startup delay " + delay + "ms"
+
+        System.out.printf(
+            "DEBUG: App.connectDbFromConfig -> %s (delay=%dms)%n",
+            location, delay
         );
 
         try {
             db.connect(location, delay);
         } catch (Exception ex) {
-            // If this fails, repos will just return empty lists,
-            // but at least we see the reason in logs.
+            // For the real app we just log; integration tests use Db directly.
             System.err.println("ERROR: DB connection failed: " + ex.getMessage());
         }
     }
