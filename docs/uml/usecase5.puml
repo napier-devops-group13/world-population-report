@@ -1,0 +1,29 @@
+@startuml
+title Use Case Diagram: Generate Top N Population Report
+
+actor "Data Analyst" as Analyst
+actor "Project Owner" as Owner
+
+rectangle "Population Analysis System" {
+
+    usecase "Generate Top N Population Report" as UC_Main
+
+    usecase "Top N Countries" as UC_Countries
+    usecase "Top N Cities" as UC_Cities
+    usecase "Top N Capital Cities" as UC_Capitals
+}
+
+Owner --> UC_Main
+Analyst --> UC_Main
+
+UC_Main <|-- UC_Countries
+UC_Main <|-- UC_Cities
+UC_Main <|-- UC_Capitals
+
+note right of UC_Main
+Main use case generates top N populated countries, cities,
+and capital cities Extensions and Sub-Variations are World,
+Continent and Region. Also User provides N for top N data.
+end note
+
+@enduml
