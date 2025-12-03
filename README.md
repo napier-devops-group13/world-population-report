@@ -48,9 +48,14 @@ Currently the project:
 ## Table of Contents
 
 - [Quick Start](#quick-start)
-- [API Endpoints — Countries (R01–R06)](#api-endpoints--countries-r01r06)
-- [Testing & Coverage](#testing-&-coverage)
-- [Report Evidence for R01–R06](#report-evidence-for-r01r06)
+- [API Endpoints — Overview (R01–R32)](#api-endpoints--overview-r01r32)
+  - [Countries (R01–R06)](#countries-r01r06)
+  - [Cities (R07–R16)](#cities-r07r16)
+  - [Capital Cities (R17–R22)](#capital-cities-r17r22)
+  - [Population & City Breakdown (R23–R31)](#population--city-breakdown-r23r31)
+  - [Languages (R32)](#languages-r32)
+- [Testing & Coverage](#testing--coverage)
+- [Report Evidence for R01–R32](#report-evidence-for-r01r32)
 - [Database & Seeding](#database--seeding)
 - [Project Structure](#project-structure)
 - [Quality & CI/CD](#quality--cicd)
@@ -60,6 +65,7 @@ Currently the project:
 - [License](#license)
 
 ---
+
 
 ## Quick Start
 
