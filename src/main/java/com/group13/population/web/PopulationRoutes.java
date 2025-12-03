@@ -11,8 +11,9 @@ import java.util.Locale;
 import java.util.Objects;
 
 /**
- * HTTP endpoints for population reports R24–R32.
+ * HTTP endpoints for population reports R23–R32.
  *
+ * R23 – /reports/population/continents
  * R24 – /reports/population/regions
  * R25 – /reports/population/countries
  * R26 – /reports/population/world
@@ -46,6 +47,15 @@ public class PopulationRoutes {
      * Register population routes with the given Javalin application.
      */
     public void register(Javalin app) {
+        // -----------------------------------------------------------------
+        // R23 – continents (population in / not in cities)
+        // -----------------------------------------------------------------
+        app.get("/reports/population/continents", ctx -> {
+            List<PopulationRow> rows = populationService.getContinentPopulationInOutCities();
+            ctx.contentType("text/csv");
+            ctx.result(buildPopulationCsv(rows));
+        });
+
         // -----------------------------------------------------------------
         // R24 – regions (population in / not in cities)
         // -----------------------------------------------------------------
@@ -204,13 +214,13 @@ public class PopulationRoutes {
     }
 
     /**
-     * Build CSV for R24/R25 style population reports.
+     * Build CSV for R23–R25 style population reports.
      * Package-private so tests in the same package can call it.
      */
     String buildPopulationCsv(List<PopulationRow> rows) {
         StringBuilder csv = new StringBuilder();
         csv.append("Name,TotalPopulation,CityPopulation,NonCityPopulation,")
-                .append("CityPopulationPercent,NonCityPopulationPercent\n");
+            .append("CityPopulationPercent,NonCityPopulationPercent\n");
 
         if (rows == null) {
             // header only
@@ -222,12 +232,12 @@ public class PopulationRoutes {
                 continue;
             }
             csv.append(escape(r.getName())).append(',')
-                    .append(r.getTotalPopulation()).append(',')
-                    .append(r.getCityPopulation()).append(',')
-                    .append(r.getNonCityPopulation()).append(',')
-                    .append(String.format(Locale.US, "%.2f", r.getCityPopulationPercent())).append(',')
-                    .append(String.format(Locale.US, "%.2f", r.getNonCityPopulationPercent()))
-                    .append('\n');
+                .append(r.getTotalPopulation()).append(',')
+                .append(r.getCityPopulation()).append(',')
+                .append(r.getNonCityPopulation()).append(',')
+                .append(String.format(Locale.US, "%.2f", r.getCityPopulationPercent())).append(',')
+                .append(String.format(Locale.US, "%.2f", r.getNonCityPopulationPercent()))
+                .append('\n');
         }
 
         return csv.toString();
@@ -257,7 +267,7 @@ public class PopulationRoutes {
         }
 
         csv.append(escape(row.getName())).append(',')
-                .append(row.getPopulation()).append('\n');
+            .append(row.getPopulation()).append('\n');
 
         return csv.toString();
     }
@@ -279,9 +289,9 @@ public class PopulationRoutes {
                 continue;
             }
             csv.append(escape(r.getLanguage())).append(',')
-                    .append(r.getSpeakers()).append(',')
-                    .append(String.format(Locale.US, "%.2f", r.getWorldPopulationPercent()))
-                    .append('\n');
+                .append(r.getSpeakers()).append(',')
+                .append(String.format(Locale.US, "%.2f", r.getWorldPopulationPercent()))
+                .append('\n');
         }
 
         return csv.toString();

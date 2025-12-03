@@ -9,9 +9,9 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Service wrapper for population reports R24–R32.
+ * Service wrapper for population reports R23–R32.
  *
- * R24–R25: population in/out of cities (region / country).
+ * R23–R25: population in/out of cities (continent / region / country).
  * R26:     population of the world.
  * R27:     population of a continent.
  * R28:     population of a region.
@@ -30,17 +30,25 @@ public class PopulationService {
     }
 
     // ---------------------------------------------------------------------
-    // R24–R26
+    // R23–R26
     // ---------------------------------------------------------------------
 
+    /** R23 – population in / not in cities for each continent. */
+    public List<PopulationRow> getContinentPopulationInOutCities() {
+        return populationRepo.findPopulationByContinentInOutCities();
+    }
+
+    /** R24 – population in / not in cities for each region. */
     public List<PopulationRow> getRegionPopulationInOutCities() {
         return populationRepo.findPopulationByRegionInOutCities();
     }
 
+    /** R25 – population in / not in cities for each country. */
     public List<PopulationRow> getCountryPopulationInOutCities() {
         return populationRepo.findPopulationByCountryInOutCities();
     }
 
+    /** R26 – world population. */
     public long getWorldPopulation() {
         return populationRepo.findWorldPopulation();
     }

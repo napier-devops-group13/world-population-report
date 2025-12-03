@@ -2,7 +2,10 @@ package com.group13.population.repo;
 
 import com.group13.population.db.Db;
 import com.group13.population.model.CityRow;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
@@ -12,16 +15,27 @@ import static org.junit.jupiter.api.Assertions.*;
  * Integration tests for {@link CityRepo} against the real MySQL
  * {@code world} database.
  *
- * Exercises all R07–R16 methods so that CityRepo gets high JaCoCo coverage.
+ * <p>These tests exercise all city reporting requirements R07–R16:</p>
+ * <ul>
+ *   <li>R07 – All cities in the world (population DESC).</li>
+ *   <li>R08 – All cities in a continent (population DESC).</li>
+ *   <li>R09 – All cities in a region (population DESC).</li>
+ *   <li>R10 – All cities in a country (population DESC).</li>
+ *   <li>R11 – All cities in a district (population DESC).</li>
+ *   <li>R12 – Top-N cities in the world (population DESC).</li>
+ *   <li>R13 – Top-N cities in a continent (population DESC).</li>
+ *   <li>R14 – Top-N cities in a region (population DESC).</li>
+ *   <li>R15 – Top-N cities in a country (population DESC).</li>
+ *   <li>R16 – Top-N cities in a district (population DESC).</li>
+ * </ul>
  */
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class CityRepoTest {
+public class CityRepoIT {
 
-    private Db db;
-    private CityRepo repo;
+    private static Db db;
+    private static CityRepo repo;
 
     @BeforeAll
-    void connectToDatabase() {
+    static void connectToDatabase() {
         db = new Db();
 
         String host = getenvOrDefault("DB_HOST", "localhost");
@@ -35,7 +49,7 @@ class CityRepoTest {
     }
 
     @AfterAll
-    void disconnectDatabase() {
+    static void disconnectDatabase() {
         if (db != null) {
             db.disconnect();
         }
@@ -111,7 +125,7 @@ class CityRepoTest {
     @Test
     @DisplayName("R11 – district filter returns cities sorted DESC")
     void districtFilterWorks() {
-        // NB: in the classic world DB the district is "Tokyo-to", not "Tokyo"
+        // IMPORTANT: real district name in the world DB is "Tokyo-to", not "Tokyo"
         List<CityRow> tokyoDistrict =
             repo.findCitiesInDistrictByPopulationDesc("Tokyo-to");
 
@@ -219,7 +233,7 @@ class CityRepoTest {
     }
 
     // ---------------------------------------------------------------------
-    // Helper methods
+    // Helpers
     // ---------------------------------------------------------------------
 
     private static void assertSortedByPopulationDesc(List<CityRow> rows, String label) {

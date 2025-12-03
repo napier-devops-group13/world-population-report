@@ -1,8 +1,19 @@
 package com.group13.population;
 
 import com.group13.population.db.Db;
+import com.group13.population.repo.CapitalRepo;
+import com.group13.population.repo.CityRepo;
 import com.group13.population.repo.PopulationRepo;
+import com.group13.population.repo.WorldRepo;
+import com.group13.population.service.CapitalService;
+import com.group13.population.service.CityService;
+import com.group13.population.service.CountryService;
 import com.group13.population.service.PopulationService;
+import com.group13.population.web.CapitalApiRoutes;
+import com.group13.population.web.CapitalRoutes;
+import com.group13.population.web.CityApiRoutes;
+import com.group13.population.web.CityRoutes;
+import com.group13.population.web.CountryRoutes;
 import com.group13.population.web.PopulationRoutes;
 import io.javalin.Javalin;
 
@@ -12,13 +23,13 @@ import java.util.Objects;
 import java.util.Properties;
 
 /**
- * Main entry point for the Population Reporting API (R24–R32).
+ * Main entry point for the World Population Reporting API (R01–R32).
  *
  * <p>This class is responsible only for:</p>
  * <ul>
  *   <li>Loading configuration.</li>
  *   <li>Connecting to the database.</li>
- *   <li>Wiring population repo → service → web routes.</li>
+ *   <li>Wiring repositories → services → web routes.</li>
  *   <li>Starting the Javalin HTTP server.</li>
  * </ul>
  *
@@ -66,18 +77,42 @@ public final class App {
         Db db = new Db();
         connectDbFromConfig(db, props);
 
-        // 2. Population reports (R24–R32)
+        // 2. Repositories
+        WorldRepo worldRepo         = new WorldRepo(db);
+        CityRepo cityRepo           = new CityRepo(db);
+        CapitalRepo capitalRepo     = new CapitalRepo(db);
         PopulationRepo populationRepo = new PopulationRepo(db);
-        PopulationService populationService = new PopulationService(populationRepo);
-        PopulationRoutes populationRoutes = new PopulationRoutes(populationService);
 
-        // 3. Build Javalin instance
+        // 3. Services
+        CountryService countryService       = new CountryService(worldRepo);
+        CityService cityService             = new CityService(cityRepo);
+        CapitalService capitalService       = new CapitalService(capitalRepo);
+        PopulationService populationService = new PopulationService(populationRepo);
+
+        // 4. Build Javalin instance
         Javalin app = Javalin.create(cfg -> cfg.showJavalinBanner = false);
 
-        // Register population routes
-        populationRoutes.register(app);
+        // 5. API routes that query the DB directly (CityApiRoutes / CapitalApiRoutes)
+        //    NOTE: these expect a Db, not a Service.
+        new CityApiRoutes(db).register(app);
+        new CapitalApiRoutes(db).register(app);
+        // (If you later add CountryApiRoutes / PopulationApiRoutes, register them here too.)
 
-        // Simple health check
+        // 6. CSV report routes (R01–R32)
+
+        // Countries R01–R06  -> /api/countries/...
+        new CountryRoutes(countryService).register(app);
+
+        // Cities R07–R16     -> /reports/cities/...
+        CityRoutes.register(app, cityService);
+
+        // Capitals R17–R22   -> /reports/capitals/...
+        CapitalRoutes.register(app, capitalService);
+
+        // Population R23–R32 -> /reports/population/...
+        new PopulationRoutes(populationService).register(app);
+
+        // 7. Simple health check
         app.get("/health", ctx -> ctx.result("OK"));
 
         return app;

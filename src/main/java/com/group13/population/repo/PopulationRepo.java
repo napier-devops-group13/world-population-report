@@ -50,6 +50,27 @@ public class PopulationRepo {
     }
 
     // ---------------------------------------------------------------------
+    // R23 – Population of people, in cities and not in cities, for each continent
+    // ---------------------------------------------------------------------
+
+    public List<PopulationRow> findPopulationByContinentInOutCities() {
+        final String sql = """
+            SELECT
+                c.Continent        AS Name,
+                SUM(c.Population)  AS TotalPopulation,
+                SUM(ci.Population) AS CityPopulation
+            FROM country c
+            LEFT JOIN city ci ON ci.CountryCode = c.Code
+            GROUP BY c.Continent
+            ORDER BY TotalPopulation DESC
+            """;
+
+        // mapPopulationRow(...) expects columns: Name, TotalPopulation, CityPopulation
+        // Non-city + percentages are calculated inside PopulationRow.fromTotals(...)
+        return runPopulationQuery(sql);
+    }
+
+    // ---------------------------------------------------------------------
     // R24 – Population of people, in cities and not in cities, for each region
     // ---------------------------------------------------------------------
 

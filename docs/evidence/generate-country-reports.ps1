@@ -1,17 +1,10 @@
-# docs/evidence/generate-population-reports.ps1
-# Generate CSV evidence files for R23–R26 from the running API.
-#
-# Population endpoints are exposed at:
-#   R23: /reports/population/continents
-#   R24: /reports/population/regions
-#   R25: /reports/population/countries
-#   R26: /reports/population/world
-#
-# Docker:   http://localhost:7080
-# IntelliJ: http://localhost:7070
+# docs/evidence/generate-country-reports.ps1
+# Generate CSV evidence files for R01–R06 from the running API.
 
 param(
-  [string]$ApiBase = "http://localhost:7080"
+# Docker:  http://localhost:7080/api
+# IntelliJ (run directly): http://localhost:7070/api
+  [string]$ApiBase = "http://localhost:7080/api"
 )
 
 $ErrorActionPreference = "Stop"
@@ -23,10 +16,12 @@ if ([string]::IsNullOrWhiteSpace($EvidenceDir)) {
 }
 
 $reports = @(
-  @{ Id = "R23"; File = "R23_population_continents.csv"; Path = "/reports/population/continents" },
-  @{ Id = "R24"; File = "R24_population_regions.csv";    Path = "/reports/population/regions"    },
-  @{ Id = "R25"; File = "R25_population_countries.csv";  Path = "/reports/population/countries"  },
-  @{ Id = "R26"; File = "R26_population_world.csv";      Path = "/reports/population/world"      }
+  @{ Id = "R01"; File = "R01_countries_world.csv";                     Path = "/countries/world" },
+  @{ Id = "R02"; File = "R02_countries_continent_Asia.csv";            Path = "/countries/continent/Asia" },
+  @{ Id = "R03"; File = "R03_countries_region_WesternEurope.csv";      Path = "/countries/region/Western%20Europe" },
+  @{ Id = "R04"; File = "R04_countries_world_top10.csv";               Path = "/countries/world/top?n=10" },
+  @{ Id = "R05"; File = "R05_countries_continent_Europe_top5.csv";     Path = "/countries/continent/Europe/top?n=5" },
+  @{ Id = "R06"; File = "R06_countries_region_WesternEurope_top3.csv"; Path = "/countries/region/Western%20Europe/top?n=3" }
 )
 
 # Give the app a few seconds if it was just started
@@ -36,7 +31,7 @@ foreach ($r in $reports) {
   $url     = "$ApiBase$($r.Path)"
   $outPath = Join-Path $EvidenceDir $r.File
 
-  Write-Host "Fetching $($r.Id) from $url"
+  Write-Host "Fetching $url"
 
   try {
     $resp = Invoke-WebRequest -Uri $url -UseBasicParsing -ErrorAction Stop
