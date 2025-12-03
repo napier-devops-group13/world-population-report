@@ -1,0 +1,29 @@
+@startuml
+title Use Case Diagram3: Generate Capital Cities Population Report
+
+actor "Data Analyst" as Analyst
+actor "Project Owner" as Owner
+
+rectangle "Population Analyst System" {
+
+    usecase "Generate All Capital Cities Population Report" as UC_Main
+
+    usecase "View All Capital Cities of World" as UC_World
+    usecase "View All Capital Cities by Continent" as UC_Continent
+    usecase "View All Capital Cities by Region" as UC_Region
+}
+
+Owner --> UC_Main
+Analyst --> UC_Main
+
+UC_Main <|-- UC_World
+UC_Main <|-- UC_Continent
+UC_Main <|-- UC_Region
+
+note right of UC_Main
+This is the main use case for generating
+all selected capital cities population reports.
+Extensions and sub-variations are continent or region.
+end note
+
+@enduml

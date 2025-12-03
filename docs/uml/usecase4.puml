@@ -1,0 +1,31 @@
+@startuml
+title Use Case Diagram: Generate Aggregated Population Report
+
+actor "Executive User" as Executive
+actor "Data Analyst" as Owner
+
+rectangle "Population Analysis System" {
+
+    usecase "Generate People Population Report" as UC_Main
+
+    usecase "View Population by Continent" as UC_Continent
+    usecase "View Population by Region" as UC_Region
+    usecase "View Population by Country" as UC_Country
+}
+
+Owner --> UC_Main
+Executive --> UC_Main
+
+UC_Main <|-- UC_Continent
+UC_Main <|-- UC_Region
+UC_Main <|-- UC_Country
+
+note right of UC_Main
+This is the main use case for generating
+aggregated population reports of people who living in cites and
+who aren't living.
+Extensions and Sub-variations are data by continent,
+region and country.
+end note
+
+@enduml
